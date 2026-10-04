@@ -1,0 +1,16 @@
+.DS_Store
+
+# Dependencies and generated output
+**/node_modules/
+**/.next/
+**/dist/
+**/coverage/
+**/.venv/
+**/__pycache__/
+*.py[cod]
+*.tsbuildinfo
+
+# Local environment files; keep example templates
+**/.env
+**/.env.*
+!**/.env.example

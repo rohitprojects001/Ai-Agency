@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rohit AI Studio | Dashboard User Guide</title>
+<style>
+  @page { size: A4; margin: 17mm 16mm 18mm; }
+  :root { --ink:#17211d; --muted:#596761; --green:#c9f35c; --dark:#111916; --line:#dce4df; --pale:#f3f7f2; --orange:#e87853; }
+  * { box-sizing:border-box; }
+  body { margin:0; color:var(--ink); font:10.5pt/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; }
+  h1,h2,h3,p { margin-top:0; }
+  h1 { font-size:37pt; line-height:1.08; letter-spacing:-1.5px; margin-bottom:12px; }
+  h2 { font-size:23pt; line-height:1.15; letter-spacing:-.5px; margin-bottom:10px; }
+  h3 { font-size:13pt; margin:0 0 5px; }
+  p { margin-bottom:10px; }
+  a { color:#255b42; }
+  .cover { min-height:255mm; margin:-17mm -16mm -18mm; padding:22mm 20mm; color:white; background:var(--dark); position:relative; }
+  .brand { color:var(--green); font-weight:800; letter-spacing:3px; font-size:11pt; }
+  .cover h1 { margin-top:38mm; max-width:145mm; }
+  .cover h1 em { color:var(--green); font-style:normal; }
+  .cover-sub { color:#d0d9d3; font-size:15pt; max-width:145mm; }
+  .cover-shot { margin-top:15mm; border:1px solid #53625a; border-radius:7px; padding:4px; background:#202a25; }
+  .cover-shot img { width:100%; height:auto; display:block; border-radius:4px; }
+  .cover-note { color:#b8c4bc; font-size:9pt; margin-top:7px; }
+  .cover-footer { position:absolute; bottom:17mm; left:20mm; right:20mm; color:#bdc9c0; border-top:1px solid #48564f; padding-top:8px; display:flex; justify-content:space-between; font-size:9pt; }
+  .page { page-break-before:always; }
+  #daily-routine { font-size:9.5pt; line-height:1.35; }
+  #daily-routine table { font-size:8pt; }
+  #daily-routine .columns { gap:7px; }
+  #daily-routine .card { padding:9px 11px; margin:7px 0; }
+  .kicker { font-size:8pt; color:#4d785d; font-weight:800; letter-spacing:2px; text-transform:uppercase; margin-bottom:7px; }
+  .intro { font-size:12pt; color:var(--muted); max-width:165mm; }
+  .rule { height:2px; background:var(--green); width:35mm; margin:14px 0 18px; }
+  .card { background:var(--pale); border:1px solid var(--line); border-radius:8px; padding:13px 15px; margin:10px 0; break-inside:avoid; }
+  .card.dark { background:var(--dark); color:white; border-color:var(--dark); }
+  .card.dark p,.card.dark li { color:#d7e0da; }
+  .callout { border-left:4px solid var(--orange); padding:9px 13px; background:#fff3ed; margin:12px 0; break-inside:avoid; }
+  .success { border-left-color:#568c62; background:#eff8ed; }
+  .columns { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  ul,ol { padding-left:20px; margin:6px 0 0; }
+  li { padding-left:2px; margin:3px 0; }
+  .small { font-size:9pt; color:var(--muted); }
+  .pill { display:inline-block; border:1px solid var(--line); border-radius:999px; padding:2px 8px; font-size:8pt; font-weight:700; }
+  .step { display:grid; grid-template-columns:30px 1fr; gap:10px; margin:12px 0; break-inside:avoid; }
+  .num { width:28px; height:28px; border-radius:50%; background:var(--green); display:grid; place-items:center; font-weight:800; }
+  table { width:100%; border-collapse:collapse; font-size:9pt; margin:10px 0; }
+  th { text-align:left; background:var(--dark); color:white; padding:8px; }
+  td { border:1px solid var(--line); padding:7px 8px; vertical-align:top; }
+  code { font:9pt ui-monospace,SFMono-Regular,Menlo,monospace; background:#eef2ed; padding:1px 4px; border-radius:3px; }
+  .terminal { color:#eff6ef; background:#19221e; padding:12px 14px; border-radius:7px; font:9pt/1.65 ui-monospace,SFMono-Regular,Menlo,monospace; white-space:pre-wrap; }
+  .footer { position:fixed; bottom:-12mm; left:0; right:0; border-top:1px solid var(--line); padding-top:5px; display:flex; justify-content:space-between; font-size:8pt; color:#738079; }
+  @media screen {
+    body { max-width:none; margin:0; padding:0; }
+    .cover, .page { min-height:842px; }
+    .cover { margin:0; padding:44px 38px; }
+    .cover h1 { margin-top:21mm; }
+    .cover-footer { left:38px; right:38px; bottom:22px; }
+    .footer { display:none; }
+  }
+</style>
+</head>
+<body>
+<div class="footer"><span>ROHIT AI STUDIO · DASHBOARD USER GUIDE</span><span>TRIAL FIRST · LIVE WHEN READY</span></div>
+
+<section class="cover">
+  <div class="brand">ROHIT AI STUDIO</div>
+  <h1>Your business,<br><em>in motion.</em></h1>
+  <p class="cover-sub">A practical guide to the dashboard: what each area does, how to try it safely, and how a real business can use it day to day.</p>
+  <div class="cover-shot">
+    <img src="file:///Users/rohitmehra/Library/Application%20Support/Code/agentSessionData/1724bfec-b063-48b0-96bb-b00e5f17f632/attachments/3d2df288-08da-4886-94c8-b4ba484b51ef/Screenshot%202026-10-03%20at%201.35.31%E2%80%AFPM.png" alt="Rohit AI Studio dashboard overview screenshot">
+  </div>
+  <p class="cover-note">Your screenshot: the Overview page in Trial mode. Counts and examples vary with your workspace data.</p>
+  <div class="cover-footer"><span>FEATURES · WORKFLOWS · REAL-WORLD EXAMPLE</span><span>OCTOBER 2026</span></div>
+</section>
+
+<section class="page">
+  <div class="kicker">Start here</div>
+  <h2>What this dashboard is for</h2>
+  <p class="intro">Rohit AI Studio brings customer conversations and everyday business follow-up into one workspace. It combines a customer list, lead pipeline, inbox, bookings, offer catalog, AI configuration, automations, and communication tools.</p>
+  <div class="rule"></div>
+  <div class="card dark">
+    <h3>The important difference: Trial and Live</h3>
+    <p><b>TRIAL</b> is a safe practice environment. Messages and calls are simulated inside the app; Trial AI is a local preview. Nothing is sent to a real customer's WhatsApp, phone, SMS, or inbox, and no paid AI provider is needed.</p>
+    <p><b>LIVE</b> sends through real, configured providers for that organization. Only an authorized platform super-admin can activate it, after confirming setup and plan status. A missing or failing real provider is an error—not a pretend success.</p>
+  </div>
+  <div class="columns">
+    <div class="card"><h3>One workspace at a time</h3><p>Each business has its own contacts, leads, conversations, offers, settings, Trial/Live mode, and provider sender details.</p></div>
+    <div class="card"><h3>One practical routine</h3><p>Set up business facts, add offers and contacts, practice a conversation, record opportunities, and review the next action.</p></div>
+  </div>
+  <div class="callout"><b>Current product boundary:</b> Trial is for learning the screens and message flow, not for verifying a real-world AI booking or contacting actual customers. Some advanced actions, especially AI tool-based booking, require a correctly configured Live AI workflow.</div>
+  <p class="small">This guide describes the current implementation. It does not promise online checkout, automatic billing, or that every listed provider is already connected.</p>
+</section>
+
+<section class="page">
+  <div class="kicker">Get into the app</div>
+  <h2>Run it on your computer</h2>
+  <p>For local development, PostgreSQL, the API, and the Next.js website need to be running. Open two Terminal windows and keep both open.</p>
+  <h3>Terminal window 1 — database and backend</h3>
+  <div class="terminal">cd "/Users/rohitmehra/Downloads/buisness ai/backend"
+docker compose up -d
+npm run dev</div>
+  <h3 style="margin-top:14px">Terminal window 2 — website</h3>
+  <div class="terminal">cd "/Users/rohitmehra/Downloads/buisness ai/frontend"
+npm run dev</div>
+  <div class="card success">
+    <h3>Open these local pages</h3>
+    <p>Dashboard: <b>http://localhost:3000/</b><br>Public workshop sales page: <b>http://localhost:3000/workshop</b></p>
+    <p class="small">These are local addresses on your computer, not public internet links. Other people cannot access them until the app is deployed to hosting with a domain.</p>
+  </div>
+  <h3>Load a ready-made demo business</h3>
+  <div class="terminal">cd "/Users/rohitmehra/Downloads/buisness ai/backend"
+npm run seed</div>
+  <p>Then sign in to the dashboard using <code>owner@urbanfit.demo</code> and <code>demo12345</code>. This is a local development account only. Never use these credentials for a public site.</p>
+  <div class="callout"><b>First time setup:</b> if your project has not been installed/configured on this computer yet, follow the root <code>README.md</code> first to prepare <code>backend/.env</code>, install dependencies, generate Prisma, and apply migrations.</div>
+</section>
+
+<section class="page">
+  <div class="kicker">The left navigation</div>
+  <h2>Every dashboard area</h2>
+  <table>
+    <thead><tr><th>Menu item</th><th>What you use it for</th><th>Example</th></tr></thead>
+    <tbody>
+      <tr><td><b>Overview</b></td><td>At-a-glance activity, open conversations, leads, bookings, revenue totals, and shortcuts.</td><td>See whether new enquiries need attention.</td></tr>
+      <tr><td><b>Conversation desk</b></td><td>Review the workspace inbox, open a customer thread, reply, reopen AI, take over, or resolve.</td><td>Take over when a customer has a complaint.</td></tr>
+      <tr><td><b>Lead pipeline</b></td><td>Track prospects through stages such as New, Contacted, Qualified, Proposal, Negotiation, Won, and Lost.</td><td>Move a qualified prospect to Proposal.</td></tr>
+      <tr><td><b>Contacts</b></td><td>Store customer name, phone/email, company, and tags in the current workspace.</td><td>Find a returning customer before replying.</td></tr>
+      <tr><td><b>Appointments</b></td><td>View appointments created by supported AI booking flows.</td><td>Check the calendar after a Live AI booking.</td></tr>
+      <tr><td><b>Offer library</b></td><td>Maintain products/services with price and duration, used as business reference.</td><td>Add a 60-minute consultation at ₹1,500.</td></tr>
+      <tr><td><b>AI agents</b></td><td>Set up named AI assistants, their instructions, and a default active agent.</td><td>Define a polite enquiry-handling assistant.</td></tr>
+      <tr><td><b>Automation engine</b></td><td>Build event-triggered workflows and inspect whether each run succeeded or failed.</td><td>When a lead is created, send a welcome message.</td></tr>
+      <tr><td><b>Channels &amp; calls</b></td><td>Check channel readiness; send a tracked message or start a demo/live voice call.</td><td>Practice a WhatsApp message in Trial.</td></tr>
+      <tr><td><b>Business setup</b></td><td>Enter business facts and AI instructions. A configured platform super-admin also sees organization Trial/Live controls.</td><td>Explain opening hours and cancellation policy.</td></tr>
+    </tbody>
+  </table>
+  <p class="small">The dashboard's labels are intentionally kept consistent across modes; a small Trial/Live marker tells you which behavior the workspace will use.</p>
+</section>
+
+<section class="page">
+  <div class="kicker">Customer operations</div>
+  <h2>Contacts, leads &amp; conversations</h2>
+  <div class="card">
+    <h3>Contacts: your customer record</h3>
+    <ol>
+      <li>Open <b>Contacts</b> and choose <b>Add contact</b>.</li>
+      <li>Enter the customer's name and the phone/email address you will use. Add a company and useful tags if relevant.</li>
+      <li>Save, then use this record in channel messaging, the lead pipeline, or a conversation.</li>
+    </ol>
+  </div>
+  <div class="card">
+    <h3>Leads: a possible sale that needs follow-up</h3>
+    <p>Create a lead from an existing contact, then move it through the pipeline as the relationship progresses. Add truthful source/value details and update the stage after real conversations.</p>
+    <p><b>Example stages:</b> New → Contacted → Qualified → Proposal → Won (or Lost). “Won” is your team’s tracking status; it is not a payment processor.</p>
+  </div>
+  <div class="card">
+    <h3>Conversation desk: the customer thread</h3>
+    <ul>
+      <li>Open a thread to review its messages and contact details.</li>
+      <li>Use <b>Take over</b> when a human should handle the issue; AI should stop talking over an escalated conversation.</li>
+      <li>Use <b>Reopen AI</b> to hand an open thread back, or resolve it when finished.</li>
+      <li>In Trial, a reply is stored as a demo and is not delivered externally. In Live, it uses the configured channel provider.</li>
+    </ul>
+  </div>
+  <div class="callout"><b>Privacy habit:</b> add only information your team needs. Workspace records are scoped so users see data only in workspaces where they have active access.</div>
+</section>
+
+<section class="page">
+  <div class="kicker">Teach the system</div>
+  <h2>Offers, AI agents &amp; automations</h2>
+  <div class="card">
+    <h3>1 · Add accurate offers</h3>
+    <p>In <b>Offer library</b>, add the real service name, price, duration, and a short description. The AI uses active offers as business facts. Keep prices and policies up to date; do not expect it to know facts you have not supplied.</p>
+  </div>
+  <div class="card">
+    <h3>2 · Give an agent a clear job</h3>
+    <p>In <b>AI agents</b>, create an agent and write instructions about role, tone, service facts, boundaries, and when to escalate. Set one active agent as default. Be explicit: “Do not promise a slot until availability is checked. Escalate billing disputes to a human.”</p>
+  </div>
+  <div class="card">
+    <h3>3 · Automate repeatable follow-up</h3>
+    <p>In <b>Automation engine</b>, choose a trigger, optional condition, and action. Current triggers include lead created, customer message received, and appointment booked. Actions include sending a WhatsApp/SMS/email message or updating a lead stage. Templates can use data such as <code>{{contact.name}}</code>.</p>
+    <p>After an event fires, inspect <b>Recent runs</b>. Failed runs show an error; do not assume an automation worked just because it was saved.</p>
+  </div>
+  <div class="callout"><b>Trial note:</b> Trial AI replies are local previews and don't call the external AI or booking tools. Use Trial to learn the interface and test demo message recording. A confirmed AI booking or live follow-up depends on Live provider setup and a supported workflow.</div>
+</section>
+
+<section class="page">
+  <div class="kicker">Safe practice</div>
+  <h2>What happens in Trial mode?</h2>
+  <p class="intro">Trial mode lets you practice without paying for or configuring communication APIs. It records demo activity in the workspace so you can see how the interface behaves.</p>
+  <table>
+    <thead><tr><th>Feature</th><th>Trial behavior</th><th>Live behavior</th></tr></thead>
+    <tbody>
+      <tr><td>WhatsApp, SMS, email</td><td>Saved as simulated demo messages; no customer receives them.</td><td>Sent using the configured real provider; missing setup returns an error.</td></tr>
+      <tr><td>Voice</td><td>Creates a demo call record; browser may speak a short demo notice. It does not dial a phone.</td><td>Places a real configured provider call; requires a public webhook URL.</td></tr>
+      <tr><td>AI</td><td>Local preview response; no AI key needed; it does not execute booking/lead tools.</td><td>Configured real AI provider can drive the supported assistant flow.</td></tr>
+      <tr><td>Contacts and pipeline</td><td>Workspace database records. Use fictional/sample people while practising.</td><td>Same screens and records; handle real personal data responsibly.</td></tr>
+      <tr><td>Automations</td><td>Can be practiced; outgoing actions remain simulated while workspace is Trial.</td><td>Configured actions may contact customers through real providers.</td></tr>
+    </tbody>
+  </table>
+  <div class="card">
+    <h3>Default trial controls</h3>
+    <p>Current defaults are configured centrally and can be adjusted by a super-admin: 14 days, up to 100 WhatsApp demo messages, 100 SMS demos, 50 email demos, 30 voice demos, and 3 users. Enabled feature areas can also be configured per workspace.</p>
+    <p class="small">The control panel can change trial limits. Automatic payment, plan renewal, and automated Trial-to-Live conversion are not implemented.</p>
+  </div>
+</section>
+
+<section class="page">
+  <div class="kicker">Example business</div>
+  <h2>Real-life example: a fitness studio</h2>
+  <p>Imagine “UrbanFit Studio” receives enquiries about personal training. The owner wants to avoid missing interested prospects and keep a consistent record of each conversation.</p>
+  <div class="step"><div class="num">1</div><div><h3>Set up facts first</h3><p>In <b>Business setup</b>, enter UrbanFit's name, hours, location, and rules. Write accurate AI instructions: session length, prices, who can book, cancellation policy, and when to ask a human.</p></div></div>
+  <div class="step"><div class="num">2</div><div><h3>Add the service</h3><p>In <b>Offer library</b>, add “Personal training consultation”, ₹1,500, 60 minutes, and a clear description. Verify this is the current price.</p></div></div>
+  <div class="step"><div class="num">3</div><div><h3>Practice safely</h3><p>Use the Trial WhatsApp simulation (for example, from the Overview card or the Conversation desk) with a fictional name and number. Enter: “Hi, I want to know about personal training.” The conversation and demo response appear in the inbox. No WhatsApp is sent.</p></div></div>
+  <div class="step"><div class="num">4</div><div><h3>Record the opportunity</h3><p>Add the fictional person as a contact. Create a lead for that contact and move it from New to Contacted after your team follows up. Use the conversation desk to practice a human reply or escalation.</p></div></div>
+  <div class="step"><div class="num">5</div><div><h3>Review what needs attention</h3><p>Use Overview for new leads/conversations; scan the lead pipeline; resolve a thread only when follow-up is complete. Review automation runs for failures.</p></div></div>
+  <div class="callout success"><b>What this practice proves:</b> your team can navigate the dashboard, store a customer journey, test demo messaging, and agree on a follow-up process. It does <b>not</b> prove real delivery, provider connectivity, payment processing, or automatic booking.</div>
+</section>
+
+<section class="page">
+  <div class="kicker">From demo to real customer operations</div>
+  <h2>Live activation: admin checklist</h2>
+  <p>Do not switch a workspace to Live simply to make the indicator green. Live mode can send real messages or place calls. Verify the business has approved the setup and the exact providers first.</p>
+  <ol>
+    <li><b>Prepare the real provider setup.</b> A deployment administrator configures provider secrets securely in the backend environment. Each workspace also needs its own sender ID/number/address in the admin setup.</li>
+    <li><b>Verify a plan.</b> Payment is currently collected outside the application. A super-admin records the applicable plan after manually confirming payment.</li>
+    <li><b>Review readiness.</b> At least one real communication channel and a real AI provider must be configured. Test the sender in a safe, authorized way.</li>
+    <li><b>Confirm activation.</b> In <b>Business setup → Trial → Live activation</b>, select the correct workspace, confirm the plan/provider setup, choose Live, and type the required confirmation phrase.</li>
+    <li><b>Start small.</b> Have an authorized team member verify a permitted test recipient, channel, and message. Check its delivery status and provider result before expanding.</li>
+    <li><b>Monitor and respond.</b> Check the inbox, failed delivery status, automation run history, and customer escalation. Human staff remain responsible for customer care.</li>
+  </ol>
+  <div class="card dark">
+    <h3>Only a platform super-admin can change modes</h3>
+    <p>Normal workspace owners/admins cannot activate their own workspace. The super-admin email must be listed in the backend's <code>SUPER_ADMIN_EMAILS</code>. Mode changes require explicit confirmation and are audit logged with previous mode, new mode, actor, and time.</p>
+  </div>
+  <div class="callout"><b>Current limitations:</b> payment is manual; there is no checkout flow. Provider API secrets are shared deployment environment settings, not encrypted per-customer credentials. Multiple sender identities per channel and automated subscription renewal are future work. If a Live provider is missing or fails, the system should show failure rather than silently simulate.</div>
+</section>
+
+<section class="page" id="daily-routine">
+  <div class="kicker">Good daily habits</div>
+  <h2>A simple operating routine</h2>
+  <div class="columns">
+    <div class="card"><h3>Start of day</h3><ul><li>Open Overview and look for conversations/leads needing attention.</li><li>Check upcoming appointments.</li><li>Assign clear ownership for follow-up.</li></ul></div>
+    <div class="card"><h3>During the day</h3><ul><li>Add new contacts accurately.</li><li>Update lead stage after a real customer interaction.</li><li>Take over conversations requiring a human.</li></ul></div>
+    <div class="card"><h3>Before using AI</h3><ul><li>Review prices and services in Offer library.</li><li>Keep hours, policies, and escalation instructions current.</li><li>Review agent instructions with your team.</li></ul></div>
+    <div class="card"><h3>Before Live sends</h3><ul><li>Confirm workspace shows LIVE.</li><li>Check provider readiness and recipient details.</li><li>Inspect failed statuses and automation runs; correct problems promptly.</li></ul></div>
+  </div>
+  <h3 style="margin-top:15px">Quick fixes</h3>
+  <table>
+    <thead><tr><th>What you see</th><th>What to check</th></tr></thead>
+    <tbody>
+      <tr><td>Dashboard remains on “Waking up your workspace”</td><td>Confirm database/backend and frontend terminals are still running; check the API at <code>http://localhost:4000/api/health</code>.</td></tr>
+      <tr><td>Cannot sign in to the demo account</td><td>Run <code>npm run seed</code> in backend; check both services are available.</td></tr>
+      <tr><td>Live channel says not configured</td><td>Ask the deployment admin to check provider environment secrets and the workspace sender identifier. Do not put provider secrets in the browser.</td></tr>
+      <tr><td>A message shows failed</td><td>Read the visible error/status, verify recipient and provider configuration, then retry only when safe. A failed message is not a successful delivery.</td></tr>
+      <tr><td>Admin Trial/Live controls are missing</td><td>Only a signed-in email in backend <code>SUPER_ADMIN_EMAILS</code> sees platform controls.</td></tr>
+    </tbody>
+  </table>
+  <p class="small">Security reminder: change demo credentials before any shared deployment; use HTTPS, production secrets, verified email sender configuration, backups, and the launch checklist before inviting real customers.</p>
+</section>
+</body>
+</html>

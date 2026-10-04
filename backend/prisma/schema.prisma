@@ -1,0 +1,484 @@
+// AI Agency - Database Schema
+// Every tenant-owned table carries organizationId. No cross-tenant queries
+// should ever be possible without going through that scope.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// IDENTITY / TENANCY
+// ---------------------------------------------------------------------------
+
+model User {
+  id                  String        @id @default(cuid())
+  email               String        @unique
+  passwordHash        String
+  name                String
+  emailVerifiedAt     DateTime?
+  failedLoginAttempts Int           @default(0)
+  lockedUntil         DateTime?
+  status              AccountStatus @default(ACTIVE)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  memberships            OrganizationMember[]
+  sessions               Session[]
+  accessRequests         AccessRequest[]
+  authChallenges         AuthChallenge[]
+  activatedSubscriptions Subscription[]       @relation("SubscriptionActivator")
+
+  @@map("users")
+}
+
+model Organization {
+  id             String             @id @default(cuid())
+  name           String
+  slug           String             @unique
+  mode           OrganizationMode   @default(TRIAL)
+  status         OrganizationStatus @default(ACTIVE)
+  trialStartedAt DateTime           @default(now())
+  trialEndsAt    DateTime?
+  trialSettings  Json?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  members             OrganizationMember[]
+  businessProfile     BusinessProfile?
+  contacts            Contact[]
+  leads               Lead[]
+  conversations       Conversation[]
+  appointments        Appointment[]
+  products            Product[]
+  agents              Agent[]
+  automationWorkflows AutomationWorkflow[]
+  automationRuns      AutomationRun[]
+  auditLogs           AuditLog[]
+  sessions            Session[]
+  accessRequests      AccessRequest[]
+  subscriptions       Subscription[]
+
+  @@map("organizations")
+}
+
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum OrganizationStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum OrganizationMode {
+  TRIAL
+  LIVE
+}
+
+enum OrgRole {
+  OWNER
+  ADMIN
+  MANAGER
+  AGENT
+  VIEWER
+}
+
+enum MembershipStatus {
+  ACTIVE
+  SUSPENDED
+  REVOKED
+}
+
+model OrganizationMember {
+  id             String           @id @default(cuid())
+  organizationId String
+  userId         String
+  role           OrgRole          @default(OWNER)
+  status         MembershipStatus @default(ACTIVE)
+  createdAt      DateTime         @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@map("organization_members")
+}
+
+model Session {
+  id             String    @id @default(cuid())
+  userId         String
+  organizationId String
+  expiresAt      DateTime
+  revokedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  lastSeenAt     DateTime  @default(now())
+  ipAddress      String?
+  userAgent      String?
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt, expiresAt])
+  @@index([organizationId, userId])
+  @@map("sessions")
+}
+
+enum AccessRequestStatus {
+  PENDING
+  APPROVED
+  DENIED
+}
+
+model AccessRequest {
+  id             String              @id @default(cuid())
+  organizationId String
+  userId         String
+  status         AccessRequestStatus @default(PENDING)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  reviewedAt     DateTime?
+  reviewedById   String?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([organizationId, status, createdAt])
+  @@map("access_requests")
+}
+
+enum AuthChallengePurpose {
+  VERIFY_EMAIL
+  RESET_PASSWORD
+}
+
+model AuthChallenge {
+  id         String               @id @default(cuid())
+  userId     String
+  purpose    AuthChallengePurpose
+  tokenHash  String               @unique
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime             @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose, expiresAt])
+  @@map("auth_challenges")
+}
+
+enum SubscriptionPlan {
+  MONTHLY
+  SIX_MONTHS
+  SEVEN_MONTHS
+  LEGACY
+}
+
+enum SubscriptionStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+  CANCELED
+}
+
+model Subscription {
+  id               String             @id @default(cuid())
+  organizationId   String
+  plan             SubscriptionPlan
+  status           SubscriptionStatus @default(PENDING)
+  startsAt         DateTime
+  endsAt           DateTime?
+  activatedById    String?
+  paymentReference String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  activatedBy  User?        @relation("SubscriptionActivator", fields: [activatedById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, status, startsAt, endsAt])
+  @@map("subscriptions")
+}
+
+model BusinessProfile {
+  id                    String   @id @default(cuid())
+  organizationId        String   @unique
+  businessName          String
+  category              String?
+  website               String?
+  phone                 String?
+  email                 String?
+  address               String?
+  timezone              String   @default("Asia/Kolkata")
+  businessHours         Json? // { mon: {open, close}, ... }
+  // Free-text knowledge the AI uses to answer customers: services, prices,
+  // policies. Replaced by a proper Knowledge Base (documents + embeddings)
+  // in a later phase - this is the simple version that works today.
+  aiInstructions        String?  @db.Text
+  // The Meta "phone_number_id" for this business's real WhatsApp number.
+  // Used to route an incoming webhook message to the right organization -
+  // set this once you have WhatsApp Business API access (see Settings).
+  whatsappPhoneNumberId String?  @unique
+  twilioPhoneNumber     String?  @unique
+  outboundEmail         String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("business_profiles")
+}
+
+// ---------------------------------------------------------------------------
+// CRM CORE (built out further in Phase 2)
+// ---------------------------------------------------------------------------
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+}
+
+model Contact {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  phone          String?
+  email          String?
+  company        String?
+  tags           String[] @default([])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  leads         Lead[]
+  conversations Conversation[]
+  appointments  Appointment[]
+
+  @@index([organizationId])
+  @@map("contacts")
+}
+
+model Lead {
+  id             String     @id @default(cuid())
+  organizationId String
+  contactId      String
+  status         LeadStatus @default(NEW)
+  source         String? // whatsapp, website, email, manual...
+  score          Int        @default(0)
+  scoreReasons   Json? // [{ label, points }]
+  value          Int?
+  ownerUserId    String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contact      Contact      @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@map("leads")
+}
+
+enum ChannelType {
+  WHATSAPP
+  EMAIL
+  SMS
+  VOICE
+  WEBSITE
+  INSTAGRAM
+}
+
+enum ConversationStatus {
+  OPEN
+  ESCALATED
+  CLOSED
+}
+
+model Conversation {
+  id             String             @id @default(cuid())
+  organizationId String
+  contactId      String
+  channel        ChannelType
+  status         ConversationStatus @default(OPEN)
+  aiSummary      String?
+  agentId        String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contact      Contact      @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  messages     Message[]
+  agent        Agent?       @relation(fields: [agentId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@map("conversations")
+}
+
+enum SenderType {
+  CUSTOMER
+  AI
+  HUMAN
+}
+
+model Message {
+  id                String     @id @default(cuid())
+  conversationId    String
+  sender            SenderType
+  content           String
+  isDemo            Boolean    @default(true) // true until a real provider is connected
+  deliveryStatus    String?
+  providerMessageId String?
+  createdAt         DateTime   @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@map("messages")
+}
+
+model Agent {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  instructions   String   @db.Text
+  isDefault      Boolean  @default(false)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  conversations Conversation[]
+
+  @@index([organizationId])
+  @@map("agents")
+}
+
+enum AutomationTrigger {
+  LEAD_CREATED
+  MESSAGE_RECEIVED
+  APPOINTMENT_BOOKED
+}
+
+enum AutomationRunStatus {
+  SUCCEEDED
+  FAILED
+}
+
+model AutomationWorkflow {
+  id             String            @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  trigger        AutomationTrigger
+  isActive       Boolean           @default(true)
+  conditions     Json?
+  actions        Json
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  runs         AutomationRun[]
+
+  @@index([organizationId, trigger, isActive])
+  @@map("automation_workflows")
+}
+
+model AutomationRun {
+  id             String              @id @default(cuid())
+  organizationId String
+  workflowId     String
+  status         AutomationRunStatus
+  trigger        AutomationTrigger
+  input          Json
+  output         Json?
+  error          String?             @db.Text
+  startedAt      DateTime            @default(now())
+  completedAt    DateTime?
+
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  workflow     AutomationWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, startedAt])
+  @@index([workflowId, startedAt])
+  @@map("automation_runs")
+}
+
+// ---------------------------------------------------------------------------
+// PRODUCTS / SERVICES
+// ---------------------------------------------------------------------------
+
+model Product {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  price          Int // in the business's local currency, smallest whole unit (e.g. rupees)
+  category       String?
+  durationMin    Int? // for bookable services, e.g. "60" for a 1-hour session
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@map("products")
+}
+
+// ---------------------------------------------------------------------------
+// APPOINTMENTS
+// ---------------------------------------------------------------------------
+
+enum AppointmentStatus {
+  SCHEDULED
+  CANCELLED
+  COMPLETED
+}
+
+model Appointment {
+  id             String            @id @default(cuid())
+  organizationId String
+  contactId      String
+  service        String
+  scheduledAt    DateTime
+  durationMin    Int               @default(60)
+  status         AppointmentStatus @default(SCHEDULED)
+  notes          String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contact      Contact      @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@map("appointments")
+}
+
+// ---------------------------------------------------------------------------
+// AUDIT
+// ---------------------------------------------------------------------------
+
+model AuditLog {
+  id             String   @id @default(cuid())
+  organizationId String
+  userId         String?
+  action         String
+  metadata       Json?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@map("audit_logs")
+}

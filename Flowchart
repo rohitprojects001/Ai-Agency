@@ -1,0 +1,20 @@
+                 ┌──────────────┐
+WhatsApp ───────►│              │
+Website ────────►│              │
+Email ──────────►│ AI ORCHESTRATOR│
+Voice ──────────►│              │
+SMS ────────────►│              │
+                 └──────┬───────┘
+                        │
+             ┌──────────┼──────────┐
+             ▼          ▼          ▼
+         Knowledge     CRM       Tools
+           Base                   │
+             │                    │
+             └────────┬───────────┘
+                      ▼
+               Automation Engine
+                      │
+          ┌───────────┼───────────┐
+          ▼           ▼           ▼
+       WhatsApp     Email       Voice

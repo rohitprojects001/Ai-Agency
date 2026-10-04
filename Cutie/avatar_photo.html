@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Mira</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%;
+    background: #0a0a0a;
+    overflow: hidden;
+    font-family: -apple-system, "SF Pro Display", sans-serif;
+  }
+  #stage {
+    width: 100%; height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+  #photo-wrap {
+    position: relative;
+    display: inline-block;
+    max-height: 78vh;
+  }
+  #photo {
+    display: block;
+    max-height: 78vh;
+    max-width: 90vw;
+    height: auto;
+    border-radius: 12px;
+  }
+  #eyelidOverlay {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+  }
+  #status-text {
+    margin-top: 16px;
+    color: #cbb8ff;
+    font-size: 13px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    opacity: 0.7;
+  }
+
+  #calibrate {
+    position: fixed;
+    top: 16px; right: 16px;
+    background: rgba(20,15,30,0.85);
+    border: 1px solid rgba(200,170,255,0.3);
+    border-radius: 10px;
+    padding: 14px 16px;
+    color: #eee;
+    font-size: 12px;
+    width: 230px;
+    display: none;
+  }
+  #calibrate.show { display: block; }
+  #calibrate label { display: block; margin-top: 8px; opacity: 0.8; }
+  #calibrate input[type=range] { width: 100%; }
+  #calibrate input[type=color] { width: 100%; height: 26px; border: none; background: none; }
+  #calibrate .row { display: flex; justify-content: space-between; }
+  #calibrate button {
+    margin-top: 10px; width: 100%; padding: 6px;
+    background: #6a4fd6; border: none; border-radius: 6px;
+    color: white; cursor: pointer; font-size: 12px;
+  }
+  #calibrate .hint { opacity: 0.55; font-size: 11px; margin-top: 8px; line-height: 1.4; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="photo-wrap">
+    <img id="photo" src="avatar.jpg" alt="Mira">
+    <svg id="eyelidOverlay">
+      <ellipse id="lid" cx="0" cy="0" rx="0" ry="0" fill="#c9a98f"/>
+    </svg>
+  </div>
+  <div id="status-text">Idle</div>
+</div>
+
+<div id="calibrate">
+  <div class="row"><b>Eye calibration</b><span id="closeCalBtn" style="cursor:pointer;">✕</span></div>
+  <label>X position <span id="xVal"></span>%</label>
+  <input type="range" id="eyeX" min="0" max="100" step="0.5" value="38">
+  <label>Y position <span id="yVal"></span>%</label>
+  <input type="range" id="eyeY" min="0" max="100" step="0.5" value="42">
+  <label>Width <span id="wVal"></span>%</label>
+  <input type="range" id="eyeW" min="1" max="30" step="0.5" value="7">
+  <label>Height <span id="hVal"></span>%</label>
+  <input type="range" id="eyeH" min="1" max="20" step="0.5" value="5">
+  <label>Skin/eyelid color (match photo)</label>
+  <input type="color" id="eyeColor" value="#c9a98f">
+  <button id="testBlinkBtn">Test blink</button>
+  <div class="hint">Adjust sliders until the ellipse below sits exactly over the open eye in your photo. Press "?" key anytime to show/hide this panel. Once happy, tell Claude the 4 numbers shown and it'll hardcode them.</div>
+</div>
+
+<script>
+const photo = document.getElementById('photo');
+const overlay = document.getElementById('eyelidOverlay');
+const lid = document.getElementById('lid');
+const statusText = document.getElementById('status-text');
+const calPanel = document.getElementById('calibrate');
+
+// ====== EDIT THESE ONCE CALIBRATED (percentages of photo width/height) ======
+let EYE_X_PCT = 38;
+let EYE_Y_PCT = 42;
+let EYE_W_PCT = 7;
+let EYE_H_PCT = 5;
+let EYE_COLOR = "#c9a98f";
+// ==============================================================================
+
+function resizeOverlay() {
+  overlay.setAttribute('width', photo.clientWidth);
+  overlay.setAttribute('height', photo.clientHeight);
+  overlay.setAttribute('viewBox', `0 0 ${photo.clientWidth} ${photo.clientHeight}`);
+  updateLidPosition();
+}
+
+function updateLidPosition() {
+  const w = photo.clientWidth;
+  const h = photo.clientHeight;
+  lid.setAttribute('cx', (EYE_X_PCT / 100) * w);
+  lid.setAttribute('cy', (EYE_Y_PCT / 100) * h);
+  lid.setAttribute('rx', (EYE_W_PCT / 100) * w);
+  lid.setAttribute('ry', 0);
+  lid.setAttribute('fill', EYE_COLOR);
+}
+
+photo.addEventListener('load', resizeOverlay);
+if (photo.complete) resizeOverlay();
+window.addEventListener('resize', resizeOverlay);
+
+function blinkOnce() {
+  const w = photo.clientWidth;
+  const h = photo.clientHeight;
+  const fullRy = (EYE_H_PCT / 100) * h;
+  let start = null;
+  const duration = 260;
+  function frame(ts) {
+    if (!start) start = ts;
+    const elapsed = ts - start;
+    const progress = Math.min(elapsed / duration, 1);
+    const ry = progress < 0.5
+      ? (progress * 2) * fullRy
+      : (1 - (progress - 0.5) * 2) * fullRy;
+    lid.setAttribute('ry', ry);
+    if (progress < 1) requestAnimationFrame(frame);
+    else lid.setAttribute('ry', 0);
+  }
+  requestAnimationFrame(frame);
+}
+
+function scheduleBlinks() {
+  const wait = 2800 + Math.random() * 2600;
+  setTimeout(() => {
+    blinkOnce();
+    scheduleBlinks();
+  }, wait);
+}
+scheduleBlinks();
+
+document.getElementById('testBlinkBtn').addEventListener('click', blinkOnce);
+document.getElementById('closeCalBtn').addEventListener('click', () => calPanel.classList.remove('show'));
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === '?') calPanel.classList.toggle('show');
+});
+
+['eyeX','eyeY','eyeW','eyeH'].forEach(id => {
+  document.getElementById(id).addEventListener('input', (e) => {
+    const map = { eyeX: 'EYE_X_PCT', eyeY: 'EYE_Y_PCT', eyeW: 'EYE_W_PCT', eyeH: 'EYE_H_PCT' };
+    const varName = map[id];
+    if (varName === 'EYE_X_PCT') EYE_X_PCT = parseFloat(e.target.value);
+    if (varName === 'EYE_Y_PCT') EYE_Y_PCT = parseFloat(e.target.value);
+    if (varName === 'EYE_W_PCT') EYE_W_PCT = parseFloat(e.target.value);
+    if (varName === 'EYE_H_PCT') EYE_H_PCT = parseFloat(e.target.value);
+    document.getElementById('xVal').textContent = EYE_X_PCT;
+    document.getElementById('yVal').textContent = EYE_Y_PCT;
+    document.getElementById('wVal').textContent = EYE_W_PCT;
+    document.getElementById('hVal').textContent = EYE_H_PCT;
+    updateLidPosition();
+  });
+});
+document.getElementById('eyeColor').addEventListener('input', (e) => {
+  EYE_COLOR = e.target.value;
+  updateLidPosition();
+});
+
+document.getElementById('xVal').textContent = EYE_X_PCT;
+document.getElementById('yVal').textContent = EYE_Y_PCT;
+document.getElementById('wVal').textContent = EYE_W_PCT;
+document.getElementById('hVal').textContent = EYE_H_PCT;
+
+async function poll() {
+  try {
+    const res = await fetch('/status', { cache: 'no-store' });
+    const data = await res.json();
+    const labels = { idle: 'Idle', listening: 'Listening', thinking: 'Thinking', speaking: 'Speaking' };
+    statusText.textContent = labels[data.state] || 'Idle';
+  } catch (e) {
+    statusText.textContent = 'Idle';
+  }
+  setTimeout(poll, 500);
+}
+poll();
+</script>
+</body>
+</html>

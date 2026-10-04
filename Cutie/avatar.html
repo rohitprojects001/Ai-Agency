@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Mira</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 50% 38%, #241a3d 0%, #100b1f 45%, #050508 80%);
+            overflow: hidden;
+            font-family: -apple-system, "SF Pro Display", sans-serif;
+        }
+        
+        #stage {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .grid-bg {
+            position: absolute;
+            inset: 0;
+            background-image: linear-gradient(rgba(120, 180, 255, 0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(120, 180, 255, 0.04) 1px, transparent 1px);
+            background-size: 44px 44px;
+            -webkit-mask-image: radial-gradient(circle at 50% 40%, black 0%, transparent 70%);
+            mask-image: radial-gradient(circle at 50% 40%, black 0%, transparent 70%);
+        }
+        
+        #face-wrap {
+            position: relative;
+            width: 440px;
+            height: 500px;
+        }
+        
+        svg {
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+        }
+        
+        .ring {
+            fill: none;
+            stroke: #5ac8ff;
+            stroke-width: 1;
+            opacity: 0.28;
+        }
+        
+        .ring-outer {
+            transform-origin: 220px 230px;
+            animation: spin 20s linear infinite;
+        }
+        
+        .ring-inner {
+            transform-origin: 220px 230px;
+            animation: spin 14s linear infinite reverse;
+        }
+        
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        
+        #hairBack {
+            fill: url(#hairGradBack);
+            opacity: 0.95;
+        }
+        
+        #hairFront {
+            fill: url(#hairGradFront);
+            opacity: 0.95;
+        }
+        
+        #faceShape {
+            fill: url(#skinGrad);
+            stroke: #9fe0ff;
+            stroke-width: 1;
+            opacity: 0.9;
+        }
+        
+        #neck {
+            fill: url(#skinGrad);
+            opacity: 0.85;
+        }
+        
+        #shoulders {
+            fill: url(#shoulderGrad);
+        }
+        
+        .brow {
+            fill: none;
+            stroke: #6fd0ff;
+            stroke-width: 2.4;
+            stroke-linecap: round;
+            opacity: 0.85;
+        }
+        
+        .eye-shape {
+            fill: #071018;
+        }
+        
+        .iris {
+            fill: url(#irisGrad);
+            filter: drop-shadow(0 0 5px rgba(130, 220, 255, 0.9));
+        }
+        
+        .pupil {
+            fill: #041018;
+        }
+        
+        .eye-highlight {
+            fill: #ffffff;
+            opacity: 0.9;
+        }
+        
+        .lash-shape {
+            opacity: 0.9;
+        }
+        
+        .eye-group.right {
+            animation: blink 5s ease-in-out infinite;
+            transform-origin: 270px 217px;
+        }
+        
+        @keyframes blink {
+            0%,
+            90%,
+            100% {
+                transform: scaleY(1);
+            }
+            94% {
+                transform: scaleY(0.05);
+            }
+        }
+        
+        .nose {
+            fill: none;
+            stroke: rgba(160, 220, 255, 0.4);
+            stroke-width: 1.2;
+            stroke-linecap: round;
+        }
+        
+        #mouth {
+            fill: #ff9fc0;
+            filter: drop-shadow(0 0 5px rgba(255, 120, 170, 0.55));
+            transition: d 0.1s ease;
+        }
+        
+        #mouthLine {
+            fill: none;
+            stroke: #ff7fae;
+            stroke-width: 1;
+            opacity: 0.6;
+        }
+        
+        .cheek {
+            fill: #ff9fc0;
+            opacity: 0.18;
+            filter: blur(1px);
+        }
+        
+        .collar {
+            fill: none;
+            stroke: #6fd0ff;
+            stroke-width: 1.4;
+            opacity: 0.55;
+        }
+        
+        .collar-node {
+            fill: #7fe8ff;
+            filter: drop-shadow(0 0 4px rgba(127, 232, 255, 0.9));
+        }
+        
+        .particle {
+            fill: #7fe8ff;
+            opacity: 0;
+        }
+        
+        .sparkle {
+            fill: #f4e6ff;
+            opacity: 0;
+            animation: twinkle 3.2s ease-in-out infinite;
+        }
+        
+        @keyframes twinkle {
+            0%,
+            100% {
+                opacity: 0;
+                transform: scale(0.4);
+            }
+            50% {
+                opacity: 0.9;
+                transform: scale(1);
+            }
+        }
+        
+        #glowHalo {
+            fill: url(#haloGrad);
+        }
+        
+        #status-text {
+            margin-top: 18px;
+            color: #7fe8ff;
+            font-size: 13px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            opacity: 0.7;
+            min-height: 18px;
+            text-align: center;
+        }
+        
+        #heard-text {
+            margin-top: 6px;
+            color: rgba(190, 240, 255, 0.5);
+            font-size: 13px;
+            max-width: 480px;
+            text-align: center;
+            min-height: 18px;
+        }
+        
+        .state-idle .ring {
+            opacity: 0.18;
+        }
+        
+        .state-listening .ring {
+            opacity: 0.6;
+        }
+        
+        .state-listening #face-wrap {
+            animation: pulse-listen 1.4s ease-in-out infinite;
+        }
+        
+        @keyframes pulse-listen {
+            0%,
+            100% {
+                filter: drop-shadow(0 0 0px rgba(127, 232, 255, 0));
+            }
+            50% {
+                filter: drop-shadow(0 0 22px rgba(127, 232, 255, 0.45));
+            }
+        }
+        
+        .state-thinking .ring-outer {
+            animation-duration: 3s;
+        }
+        
+        .state-thinking .ring-inner {
+            animation-duration: 2s;
+        }
+        
+        .state-thinking .iris {
+            fill: url(#irisGradThink);
+        }
+        
+        .state-thinking .ring {
+            stroke: #c69bff;
+            opacity: 0.5;
+        }
+        
+        .state-speaking #face-wrap {
+            animation: pulse-speak 0.5s ease-in-out infinite;
+        }
+        
+        @keyframes pulse-speak {
+            0%,
+            100% {
+                filter: drop-shadow(0 0 3px rgba(255, 140, 190, 0.25));
+            }
+            50% {
+                filter: drop-shadow(0 0 16px rgba(255, 140, 190, 0.5));
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="stage" class="state-idle">
+        <div class="grid-bg"></div>
+        <div id="face-wrap">
+            <svg viewBox="0 0 440 500">
+      <defs>
+        <linearGradient id="skinGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#fff3ec" stop-opacity="0.95"/>
+          <stop offset="100%" stop-color="#ffe6da" stop-opacity="0.92"/>
+        </linearGradient>
+        <linearGradient id="hairGradBack" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#c9a6ff"/>
+          <stop offset="100%" stop-color="#8f6fe0"/>
+        </linearGradient>
+        <linearGradient id="hairGradFront" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#e3caff"/>
+          <stop offset="100%" stop-color="#a480ec"/>
+        </linearGradient>
+        <linearGradient id="hairShine" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.85"/>
+          <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+        </linearGradient>
+        <linearGradient id="shoulderGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#c9a6ff" stop-opacity="0.5"/>
+          <stop offset="100%" stop-color="#c9a6ff" stop-opacity="0.15"/>
+        </linearGradient>
+        <radialGradient id="irisGrad" cx="35%" cy="30%" r="75%">
+          <stop offset="0%" stop-color="#d9c9ff"/>
+          <stop offset="45%" stop-color="#8a6fe8"/>
+          <stop offset="100%" stop-color="#4f3aa8"/>
+        </radialGradient>
+        <radialGradient id="irisGradThink" cx="35%" cy="30%" r="75%">
+          <stop offset="0%" stop-color="#ffd9ec"/>
+          <stop offset="45%" stop-color="#ff8fc0"/>
+          <stop offset="100%" stop-color="#c0428f"/>
+        </radialGradient>
+        <radialGradient id="haloGrad" cx="50%" cy="45%" r="55%">
+          <stop offset="0%" stop-color="#c9a6ff" stop-opacity="0.35"/>
+          <stop offset="60%" stop-color="#8a6fe8" stop-opacity="0.12"/>
+          <stop offset="100%" stop-color="#8a6fe8" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+
+      <ellipse id="glowHalo" cx="220" cy="220" rx="230" ry="230"/>
+      <g id="sparkles"></g>
+
+      <g class="ring ring-outer"><circle cx="220" cy="230" r="205" stroke-dasharray="4 11"/></g>
+      <g class="ring ring-inner"><circle cx="220" cy="230" r="178" stroke-dasharray="2 15"/></g>
+      <g id="particles"></g>
+
+      <path id="shoulders" d="M 85 500 Q 108 395 158 372 Q 220 348 282 372 Q 332 395 355 500 Z"/>
+
+      <path id="hairBack" d="M 220 78
+        C 140 78 92 140 90 215
+        C 88 285 104 350 92 430
+        C 140 405 152 355 158 305
+        C 150 260 152 205 188 160
+        C 192 215 186 280 202 335
+        Q 220 352 238 335
+        C 254 280 248 215 252 160
+        C 288 205 290 260 282 305
+        C 288 355 300 405 348 430
+        C 336 350 352 285 350 215
+        C 348 140 300 78 220 78 Z"/>
+      <path fill="url(#hairShine)" opacity="0.35" d="M 128 190 C 122 260 130 330 118 400 C 132 340 136 265 140 200 Z"/>
+      <path fill="url(#hairShine)" opacity="0.22" d="M 300 200 C 306 265 302 335 316 400 C 304 340 298 265 292 205 Z"/>
+
+      <g id="bow" transform="translate(298,150) rotate(-18)">
+        <path d="M 0 0 C -18 -12 -34 -6 -34 6 C -34 16 -18 18 0 8 Z" fill="url(#hairGradFront)" stroke="#7a5cd0" stroke-width="1" opacity="0.95"/>
+        <path d="M 0 0 C 18 -12 34 -6 34 6 C 34 16 18 18 0 8 Z" fill="url(#hairGradFront)" stroke="#7a5cd0" stroke-width="1" opacity="0.95"/>
+        <circle cx="0" cy="3" r="6" fill="#c9a6ff" stroke="#7a5cd0" stroke-width="1"/>
+      </g>
+
+      <ellipse id="faceShape" cx="220" cy="222" rx="92" ry="98"/>
+
+      <path id="hairFront" d="M 220 70
+        C 158 70 116 108 104 158
+        C 130 138 158 126 186 122
+        C 172 145 164 172 165 198
+        C 184 172 202 150 220 148
+        C 238 150 256 172 275 198
+        C 276 172 268 145 254 122
+        C 282 126 310 138 336 158
+        C 324 108 282 70 220 70 Z"/>
+      <path id="hairSwoosh" fill="url(#hairGradFront)" opacity="0.95" d="M 178 118
+        C 150 92 132 68 140 44
+        C 150 62 168 78 190 90
+        C 178 76 172 58 180 42
+        C 194 62 210 82 222 100
+        C 210 108 194 116 178 118 Z"/>
+      <path fill="url(#hairShine)" opacity="0.5" d="M 150 128 C 138 148 132 168 132 188 C 148 162 162 142 180 128 Z"/>
+      <ellipse id="neck" cx="220" cy="330" rx="28" ry="30"/>
+
+      <path class="collar" d="M 148 388 Q 220 418 292 388"/>
+      <circle class="collar-node" cx="220" cy="408" r="3.5"/>
+
+      <ellipse class="cheek" cx="163" cy="248" rx="20" ry="12"/>
+      <ellipse class="cheek" cx="277" cy="248" rx="20" ry="12"/>
+
+      <path class="brow" d="M 138 190 Q 162 178 190 188"/>
+      <path class="brow" d="M 250 188 Q 278 178 302 190"/>
+
+      <g class="eye-group left">
+        <path class="lash-shape" d="M 132 205 Q 163 178 196 202 Q 165 195 132 205 Z" fill="#3a2a5c" stroke="none"/>
+        <path d="M 145 217 Q 165 228 188 216" fill="none" stroke="#3a2a5c" stroke-width="3" stroke-linecap="round"/>
+      </g>
+      <g class="eye-group right">
+        <path class="lash-shape" d="M 308 205 Q 277 178 244 202 Q 275 195 308 205 Z" fill="#3a2a5c" stroke="none"/>
+        <ellipse class="eye-shape" cx="275" cy="215" rx="26" ry="21"/>
+        <circle class="iris" cx="270" cy="217" r="17"/>
+        <circle class="pupil" cx="270" cy="217" r="7.5"/>
+        <circle class="eye-highlight" cx="276" cy="209" r="4.2"/>
+        <circle class="eye-highlight" cx="263" cy="222" r="2"/>
+      </g>
+
+      <path class="nose" d="M 216 232 Q 213 246 216 252"/>
+
+      <path id="mouthLine" d="M 198 271 Q 220 279 242 271"/>
+      <path id="mouth" d="M 200 271 Q 220 275 240 271 Q 220 282 200 271 Z"/>
+    </svg>
+        </div>
+        <div id="status-text">Idle</div>
+        <div id="heard-text"></div>
+    </div>
+
+    <script>
+        const stage = document.getElementById('stage');
+        const statusText = document.getElementById('status-text');
+        const heardText = document.getElementById('heard-text');
+        const mouth = document.getElementById('mouth');
+        const mouthLine = document.getElementById('mouthLine');
+        const particlesGroup = document.getElementById('particles');
+        const sparklesGroup = document.getElementById('sparkles');
+
+        function makeStar(cx, cy, size) {
+            const s = size;
+            return `M ${cx} ${cy - s} L ${cx + s * 0.25} ${cy - s * 0.25} L ${cx + s} ${cy} L ${cx + s * 0.25} ${cy + s * 0.25} L ${cx} ${cy + s} L ${cx - s * 0.25} ${cy + s * 0.25} L ${cx - s} ${cy} L ${cx - s * 0.25} ${cy - s * 0.25} Z`;
+        }
+
+        const sparklePositions = [
+            [70, 130, 6],
+            [370, 110, 5],
+            [40, 260, 4],
+            [400, 280, 6],
+            [90, 400, 4],
+            [350, 420, 5],
+            [220, 60, 4]
+        ];
+        sparklePositions.forEach(([x, y, s], i) => {
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('class', 'sparkle');
+            path.setAttribute('d', makeStar(x, y, s));
+            path.style.animationDelay = (i * 0.45) + 's';
+            sparklesGroup.appendChild(path);
+        });
+
+        const STATES = ['idle', 'listening', 'thinking', 'speaking'];
+        const LABELS = {
+            idle: 'Idle',
+            listening: 'Listening',
+            thinking: 'Thinking',
+            speaking: 'Speaking'
+        };
+
+        let currentState = 'idle';
+        let mouthPhase = 0;
+        let particles = [];
+
+        for (let i = 0; i < 26; i++) {
+            const angle = (i / 26) * Math.PI * 2;
+            const el = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            el.setAttribute('class', 'particle');
+            el.setAttribute('r', '2');
+            particlesGroup.appendChild(el);
+            particles.push({
+                el,
+                angle
+            });
+        }
+
+        function setState(state) {
+            if (state === currentState) return;
+            STATES.forEach(s => stage.classList.remove('state-' + s));
+            stage.classList.add('state-' + state);
+            statusText.textContent = LABELS[state] || state;
+            currentState = state;
+        }
+
+        function animateFrame() {
+            const r = currentState === 'listening' ? 212 : 224;
+            const opacity = currentState === 'listening' ? 0.75 : 0;
+            particles.forEach((p) => {
+                const a = p.angle + (currentState === 'listening' ? performance.now() / 2600 : 0);
+                const x = 220 + Math.cos(a) * r;
+                const y = 230 + Math.sin(a) * r * 1.08;
+                p.el.setAttribute('cx', x);
+                p.el.setAttribute('cy', y);
+                p.el.setAttribute('opacity', opacity);
+            });
+
+            if (currentState === 'speaking') {
+                mouthPhase += 0.4;
+                const openness = 3 + Math.abs(Math.sin(mouthPhase)) * 15;
+                mouth.setAttribute('d', `M 200 271 Q 220 ${275 + openness} 240 271 Q 220 282 200 271 Z`);
+                mouthLine.setAttribute('d', `M 198 271 Q 220 ${279 + openness} 242 271`);
+            } else if (currentState === 'thinking') {
+                const t = performance.now() / 450;
+                const wob = Math.sin(t) * 2;
+                mouth.setAttribute('d', `M 200 ${271 + wob} Q 220 ${275 + wob} 240 ${271 + wob} Q 220 ${282 + wob} 200 ${271 + wob} Z`);
+                mouthLine.setAttribute('d', `M 198 ${271 + wob} Q 220 ${279 + wob} 242 ${271 + wob}`);
+            } else {
+                mouth.setAttribute('d', 'M 200 271 Q 220 275 240 271 Q 220 282 200 271 Z');
+                mouthLine.setAttribute('d', 'M 198 271 Q 220 279 242 271');
+            }
+
+            requestAnimationFrame(animateFrame);
+        }
+        animateFrame();
+
+        async function poll() {
+            try {
+                const res = await fetch('/status', {
+                    cache: 'no-store'
+                });
+                const data = await res.json();
+                setState(data.state || 'idle');
+                heardText.textContent = data.text || '';
+            } catch (e) {
+                statusText.textContent = 'Disconnected';
+            }
+            setTimeout(poll, 300);
+        }
+        poll();
+    </script>
+</body>
+
+</html>
