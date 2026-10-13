@@ -86,6 +86,9 @@ const EMPTY_SNAPSHOT: Snapshot = {
 
 async function request<T>(path: string, init: RequestInit = {}, token?: string): Promise<T> {
   void token;
+  if (!CONFIGURED_API_BASE && process.env.NODE_ENV === "production") {
+    throw new Error("NEXT_PUBLIC_API_URL is not set");
+  }
   const apiBase = CONFIGURED_API_BASE
     ?? (typeof window === "undefined" ? "http://localhost:4000/api" : `http://${window.location.hostname}:4000/api`);
   const response = await fetch(`${apiBase}${path}`, {
