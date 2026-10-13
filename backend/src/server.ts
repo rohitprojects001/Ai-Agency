@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import { asyncHandler } from "./lib/async-handler";
 import { prisma } from "./lib/prisma";
 import { authRouter } from "./routes/auth";
@@ -29,6 +30,11 @@ const app = express();
 const trustProxyHops = Number(process.env.TRUST_PROXY_HOPS ?? 0);
 if (!Number.isInteger(trustProxyHops) || trustProxyHops < 0) {
   throw new Error("TRUST_PROXY_HOPS must be a non-negative integer");
+}
+const hostedProxyEnvironment = ["RENDER", "RAILWAY_ENVIRONMENT", "VERCEL"]
+  .some((name) => process.env[name] !== undefined);
+if (process.env.NODE_ENV === "production" && hostedProxyEnvironment && trustProxyHops === 0) {
+  throw new Error("Set TRUST_PROXY_HOPS to the number of trusted proxy hops in production");
 }
 if (trustProxyHops > 0) {
   app.set("trust proxy", trustProxyHops);
@@ -68,6 +74,19 @@ app.use(express.json({
   },
 }));
 app.use(express.urlencoded({ extended: false }));
+
+app.use("/api", (req, _res, next) => {
+  if (process.env.DEBUG_IP === "true") {
+    console.log(`[DEBUG_IP] ${req.method} ${req.path} ip=${req.ip}`);
+  }
+  next();
+});
+app.use("/api", rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+}));
 
 app.get("/api/health", (_req, res) => {
   res.set("Cache-Control", "no-store").json({ status: "ok", service: "ai-agency-backend" });
