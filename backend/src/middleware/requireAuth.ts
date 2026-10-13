@@ -24,7 +24,12 @@ function getAllowedOrigins() {
 
 export function readSessionToken(req: Request) {
   const cookie = req.headers.cookie?.split(";").map((part) => part.trim()).find((part) => part.startsWith(`${cookieName}=`));
-  return cookie ? decodeURIComponent(cookie.slice(cookieName.length + 1)) : undefined;
+  if (!cookie) return undefined;
+  try {
+    return decodeURIComponent(cookie.slice(cookieName.length + 1));
+  } catch {
+    return undefined;
+  }
 }
 
 export function setSessionCookie(res: Response, token: string) {

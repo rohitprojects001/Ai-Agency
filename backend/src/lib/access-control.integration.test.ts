@@ -80,6 +80,11 @@ test("requires a server session cookie for protected workspace data", async () =
   const unauthenticated = await api("/api/contacts");
   assert.equal(unauthenticated.status, 401);
 
+  const malformedCookie = await api("/api/contacts", {
+    headers: { Cookie: "studio_session=%E0%A4%A" },
+  });
+  assert.equal(malformedCookie.status, 401);
+
   const authenticated = await api("/api/contacts", { headers: { Cookie: cookie } });
   assert.equal(authenticated.status, 200);
   const trialFeature = await api("/api/agents", { headers: { Cookie: cookie } });
