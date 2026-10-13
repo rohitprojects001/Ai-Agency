@@ -9,6 +9,7 @@ interface IncomingMessageInput {
   channel: ChannelType;
   contact: { name: string; phone?: string; email?: string };
   messageText: string;
+  externalMessageId?: string;
   agentId?: string;
   // false for a real message from a connected provider (e.g. real WhatsApp
   // webhook); true for the in-app simulator. Defaults to true so nothing
@@ -286,7 +287,15 @@ export async function handleIncomingMessage(input: IncomingMessageInput) {
 
   // 3. Store the incoming customer message.
   await prisma.message.create({
-    data: { conversationId: conversation.id, sender: "CUSTOMER", content: messageText, isDemo },
+    data: {
+      conversationId: conversation.id,
+      sender: "CUSTOMER",
+      content: messageText,
+      isDemo,
+      ...(input.externalMessageId
+        ? { organizationId, externalMessageId: input.externalMessageId }
+        : {}),
+    },
   });
 
   await runAutomationEvent({

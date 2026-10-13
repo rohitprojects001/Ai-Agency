@@ -3,6 +3,7 @@ import { prisma } from "../lib/prisma";
 import { isValidMetaSignature } from "../lib/meta-signature";
 import { sendOutboundMessage } from "../services/outbound-messages";
 import { handleIncomingMessage } from "../services/orchestrator";
+import { isValidWhatsAppVerifyToken, processWhatsAppMessages, type WhatsAppWebhookPayload } from "../lib/whatsapp-webhook";
 
 export const webhooksRouter = Router();
 
@@ -14,23 +15,11 @@ webhooksRouter.get("/whatsapp", (req, res) => {
   const token = req.query["hub.verify_token"];
   const challenge = req.query["hub.challenge"];
 
-  if (mode === "subscribe" && token === process.env.WHATSAPP_VERIFY_TOKEN) {
+  if (isValidWhatsAppVerifyToken(mode, token, process.env.WHATSAPP_VERIFY_TOKEN)) {
     return res.status(200).send(challenge);
   }
   return res.sendStatus(403);
 });
-
-interface WhatsAppWebhookPayload {
-  entry?: {
-    changes?: {
-      value?: {
-        metadata?: { phone_number_id?: string };
-        contacts?: { profile?: { name?: string }; wa_id?: string }[];
-        messages?: { from?: string; text?: { body?: string }; type?: string }[];
-      };
-    }[];
-  }[];
-}
 
 // POST /api/webhooks/whatsapp - real incoming customer messages.
 // Runs the exact same orchestrator as the demo simulator - only the source
@@ -53,53 +42,65 @@ webhooksRouter.post("/whatsapp", async (req, res) => {
 
   try {
     const payload = req.body as WhatsAppWebhookPayload;
-    const value = payload.entry?.[0]?.changes?.[0]?.value;
-    const message = value?.messages?.[0];
-    if (!message || message.type !== "text" || !message.from || !message.text?.body) return;
+    await processWhatsAppMessages(payload, async ({ phoneNumberId, contacts, message }) => {
+      try {
+        if (message.type !== "text" || !message.from || !message.text?.body) return;
+        if (!phoneNumberId) return;
 
-    const phoneNumberId = value?.metadata?.phone_number_id;
-    if (!phoneNumberId) return;
+        const businessProfile = await prisma.businessProfile.findUnique({
+          where: { whatsappPhoneNumberId: phoneNumberId },
+        });
+        if (!businessProfile) {
+          console.warn(`WhatsApp webhook: no organization linked to phone_number_id ${phoneNumberId}`);
+          return;
+        }
+        if (message.id) {
+          const duplicate = await prisma.message.findFirst({
+            where: {
+              organizationId: businessProfile.organizationId,
+              externalMessageId: message.id,
+            },
+            select: { id: true },
+          });
+          if (duplicate) return;
+        }
 
-    // Figure out which business this number belongs to.
-    const businessProfile = await prisma.businessProfile.findUnique({
-      where: { whatsappPhoneNumberId: phoneNumberId },
+        const organization = await prisma.organization.findUnique({
+          where: { id: businessProfile.organizationId },
+          select: { mode: true, status: true },
+        });
+        if (!organization || organization.status !== "ACTIVE" || organization.mode !== "LIVE") {
+          console.warn("WhatsApp webhook ignored: workspace is not active in Live mode");
+          return;
+        }
+
+        const contactName = contacts?.find((contact) => contact.wa_id === message.from)?.profile?.name
+          ?? contacts?.[0]?.profile?.name
+          ?? message.from;
+        const { conversation, aiMessage } = await handleIncomingMessage({
+          organizationId: businessProfile.organizationId,
+          channel: "WHATSAPP",
+          contact: { name: contactName, phone: message.from },
+          messageText: message.text.body,
+          externalMessageId: message.id,
+          isDemo: false,
+        });
+
+        if (aiMessage) {
+          await sendOutboundMessage({
+            organizationId: businessProfile.organizationId,
+            contactId: conversation.contactId,
+            conversationId: conversation.id,
+            existingMessageId: aiMessage.id,
+            channel: "WHATSAPP",
+            content: aiMessage.content,
+            sender: "AI",
+          });
+        }
+      } catch (err) {
+        console.error(`WhatsApp webhook message ${message.id ?? "(missing id)"} processing failed:`, err);
+      }
     });
-    if (!businessProfile) {
-      console.warn(`WhatsApp webhook: no organization linked to phone_number_id ${phoneNumberId}`);
-      return;
-    }
-    const organization = await prisma.organization.findUnique({
-      where: { id: businessProfile.organizationId },
-      select: { mode: true, status: true },
-    });
-    if (!organization || organization.status !== "ACTIVE" || organization.mode !== "LIVE") {
-      console.warn("WhatsApp webhook ignored: workspace is not active in Live mode");
-      return;
-    }
-
-    const contactName = value?.contacts?.[0]?.profile?.name ?? message.from;
-
-    const { conversation, aiMessage } = await handleIncomingMessage({
-      organizationId: businessProfile.organizationId,
-      channel: "WHATSAPP",
-      contact: { name: contactName, phone: message.from },
-      messageText: message.text.body,
-      isDemo: false,
-    });
-
-    // aiMessage is null when the conversation was already escalated to a
-    // human - in that case we don't send anything back automatically.
-    if (aiMessage) {
-      await sendOutboundMessage({
-        organizationId: businessProfile.organizationId,
-        contactId: conversation.contactId,
-        conversationId: conversation.id,
-        existingMessageId: aiMessage.id,
-        channel: "WHATSAPP",
-        content: aiMessage.content,
-        sender: "AI",
-      });
-    }
   } catch (err) {
     console.error("WhatsApp webhook processing failed:", err);
   }

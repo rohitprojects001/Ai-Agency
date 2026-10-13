@@ -50,6 +50,7 @@ model Organization {
 
   members             OrganizationMember[]
   businessProfile     BusinessProfile?
+  messages            Message[]
   contacts            Contact[]
   leads               Lead[]
   conversations       Conversation[]
@@ -332,16 +333,20 @@ enum SenderType {
 
 model Message {
   id                String     @id @default(cuid())
+  organizationId    String?
   conversationId    String
   sender            SenderType
   content           String
   isDemo            Boolean    @default(true) // true until a real provider is connected
   deliveryStatus    String?
   providerMessageId String?
+  externalMessageId String?
   createdAt         DateTime   @default(now())
 
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
+  @@unique([organizationId, externalMessageId])
   @@index([conversationId])
   @@map("messages")
 }
