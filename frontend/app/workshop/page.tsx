@@ -6,7 +6,7 @@ const siteUrl = getPublicSiteUrl();
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl ?? "http://localhost:3000"),
-  title: "Business AI Workshop | Rohit AI Studio",
+  title: "Business AI Workshop | Techiesee",
   description: "A practical AI business management workspace for Indian small businesses. Organize leads, customer conversations, appointments, and automations in one place. Plans from ₹99.",
   keywords: [
     "AI business management",
@@ -16,21 +16,21 @@ export const metadata: Metadata = {
     "customer conversation management",
     "AI tools for small business",
     "appointment management for business",
-    "Rohit AI Studio",
+    "Techiesee",
   ],
   alternates: siteUrl ? { canonical: `${siteUrl}/workshop` } : undefined,
   openGraph: {
-    title: "A calmer way to run your business | Rohit AI Studio",
+    title: "A calmer way to run your business | Techiesee",
     description: "Manage leads, conversations, appointments, and AI workflows in one business workspace. Explore workshop plans from ₹99.",
     type: "website",
     locale: "en_IN",
-    siteName: "Rohit AI Studio",
+    siteName: "Techiesee",
     url: siteUrl ? `${siteUrl}/workshop` : undefined,
-    ...(siteUrl ? { images: [{ url: "/workshop/opengraph-image", width: 1200, height: 630, alt: "Rohit AI Studio — one calm workspace for your business" }] } : {}),
+    ...(siteUrl ? { images: [{ url: "/workshop/opengraph-image", width: 1200, height: 630, alt: "Techiesee — one calm workspace for your business" }] } : {}),
   },
   twitter: {
     card: "summary_large_image",
-    title: "A calmer way to run your business | Rohit AI Studio",
+    title: "A calmer way to run your business | Techiesee",
     description: "Manage leads, customer conversations, appointments, and AI workflows in one business workspace.",
     ...(siteUrl ? { images: ["/workshop/opengraph-image"] } : {}),
   },
@@ -44,11 +44,11 @@ export default function WorkshopPage() {
       {
         "@type": "Organization",
         ...(siteUrl ? { "@id": `${siteUrl}/#organization`, url: siteUrl } : {}),
-        name: "Rohit AI Studio",
+        name: "Techiesee",
       },
       {
         "@type": "SoftwareApplication",
-        name: "Rohit AI Studio Business Workspace",
+        name: "Techiesee Business Workspace",
         ...(siteUrl ? { url: `${siteUrl}/workshop`, provider: { "@id": `${siteUrl}/#organization` } } : {}),
         applicationCategory: "BusinessApplication",
         operatingSystem: "Web",
@@ -65,7 +65,7 @@ export default function WorkshopPage() {
           {
             "@type": "Question",
             name: "How do I get access to the business workshop?",
-            acceptedAnswer: { "@type": "Answer", text: "Choose a plan and send an access request. Rohit AI Studio will contact you to arrange payment and manually activate your business workspace." },
+            acceptedAnswer: { "@type": "Answer", text: "Choose a plan and send an access request. Techiesee will contact you to arrange payment and manually activate your business workspace." },
           },
           {
             "@type": "Question",

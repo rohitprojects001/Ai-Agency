@@ -135,7 +135,7 @@ export default function WorkspaceAccess({ slug }: { slug: string }) {
 
   return (
     <main className={styles.page}>
-      <Link className={styles.brand} href="/" aria-label="Rohit AI Studio home"><span>✳</span> ROHIT AI STUDIO</Link>
+      <Link className={styles.brand} href="/" aria-label="Techiesee home"><span>✳</span> TECHIESEE</Link>
       <section className={styles.card} aria-live="polite">
         <div className={styles.kicker}>PRIVATE BUSINESS WORKSPACE</div>
         <div className={styles.lock} aria-hidden="true">{state === "member" ? "✓" : "⌑"}</div>

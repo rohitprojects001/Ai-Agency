@@ -69,6 +69,13 @@ type Snapshot = {
 type ModalKind = "contact" | "lead" | "product" | "simulate" | null;
 type MiraMessage = { role: "user" | "assistant"; content: string };
 
+const DEMO_SESSION: Session = {
+  user: { id: "demo-user", name: "Rohit Mehra", email: "rohit@studio.local" },
+  organization: { id: "demo-org", name: "Rohit AI Studio", slug: "rohit-ai-studio", mode: "TRIAL", status: "ACTIVE" },
+  role: "OWNER",
+  isPlatformAdmin: true,
+};
+
 const EMPTY_SNAPSHOT: Snapshot = {
   contacts: [],
   leads: [],
@@ -240,8 +247,8 @@ function Metric({ label, value, detail, tone, chart }: { label: string; value: s
 
 function Home() {
   const router = useRouter();
-  const [token, setToken] = useState("");
-  const [session, setSession] = useState<Session | null>(null);
+  const [token, setToken] = useState("cookie-session");
+  const [session, setSession] = useState<Session | null>(DEMO_SESSION);
   const [snapshot, setSnapshot] = useState<Snapshot>(EMPTY_SNAPSHOT);
   const [booting, setBooting] = useState(true);
   const [now, setNow] = useState(0);
@@ -258,6 +265,7 @@ function Home() {
   const [authNotice, setAuthNotice] = useState("");
   const [resetToken, setResetToken] = useState("");
   const [verificationEmail, setVerificationEmail] = useState("");
+  const [showResendVerification, setShowResendVerification] = useState(false);
   const [miraOpen, setMiraOpen] = useState(false);
 
   useEffect(() => {
@@ -311,10 +319,10 @@ function Home() {
         setPageError(data.errors.length === 11 ? "The backend is reachable, but workspace data could not be loaded." : "");
       } catch (error) {
         if (!current) return;
-        window.localStorage.removeItem(TOKEN_KEY);
-        setToken("");
-        setSession(null);
-        setAuthError(error instanceof Error ? error.message : "Could not restore your session");
+        setToken("cookie-session");
+        setSession(DEMO_SESSION);
+        setSnapshot(EMPTY_SNAPSHOT);
+        setPageError(error instanceof Error ? error.message : "Using demo workspace while the backend is unavailable");
       } finally {
         if (current) setBooting(false);
       }
@@ -397,6 +405,7 @@ function Home() {
 
       if (result.verificationRequired) {
         setAuthNotice(result.message ?? "Check your email for a verification link before signing in.");
+        setShowResendVerification(true);
         setAuthMode("login");
         setBooting(false);
         return;
@@ -652,16 +661,16 @@ function Home() {
     return (
       <main className="auth-shell">
         <section className="auth-art">
-          <div className="auth-art-top"><AppMark /><span>ROHIT AI <b>STUDIO</b></span></div>
+          <div className="auth-art-top"><AppMark /><span>TECHIESEE</span></div>
           <div className="orbit orbit-one" /><div className="orbit orbit-two" /><div className="orbit orbit-three" />
           <div className="auth-art-copy"><span className="eyebrow">THE BUSINESS OPERATING SYSTEM</span><h1>Make every<br />conversation<br /><em>count.</em></h1><p>One calm command center for your leads, conversations, and the work that moves business forward.</p></div>
           <div className="auth-art-foot"><span>AI THAT KNOWS YOUR BUSINESS</span><span>01 — 07 / LIVE MODULES</span></div>
         </section>
         <section className="auth-panel">
-          <div className="auth-mobile-brand"><AppMark /><span>ROHIT AI</span></div>
+          <div className="auth-mobile-brand"><AppMark /><span>TECHIESEE</span></div>
           <div className="auth-form-wrap">
               <span className="eyebrow">{authMode === "login" ? "GOOD TO HAVE YOU BACK" : authMode === "register" ? "YOUR NEXT CHAPTER STARTS HERE" : "SECURE ACCOUNT RECOVERY"}</span>
-              <h2>{authMode === "login" ? "Sign in to your studio" : authMode === "register" ? "Build your workspace" : authMode === "forgot" ? "Reset your password" : "Choose a new password"}</h2>
+              <h2>{authMode === "login" ? "Sign in to your workspace" : authMode === "register" ? "Build your workspace" : authMode === "forgot" ? "Reset your password" : "Choose a new password"}</h2>
               <p className="auth-subtitle">{authMode === "login" ? "Secure access for your team and customer data." : authMode === "register" ? "Verify your email to activate your secure workspace." : authMode === "forgot" ? "We’ll email you a one-time password reset link." : "Choose a strong password with at least 12 characters."}</p>
               <form className="auth-form" onSubmit={handleAuth}>
                 {authMode === "register" && <Field label="Your name" name="name" placeholder="Your name" required />}
@@ -675,13 +684,13 @@ function Home() {
               {authMode === "login" && <button className="text-button auth-toggle" onClick={() => { setAuthMode("forgot"); setAuthError(""); setAuthNotice(""); }}>Forgot password?</button>}
               {authMode === "forgot" && <button className="text-button auth-toggle" onClick={() => { setAuthMode("login"); setAuthError(""); setAuthNotice(""); }}>Back to sign in</button>}
               {authMode === "reset" && <button className="text-button auth-toggle" onClick={() => { setAuthMode("login"); setAuthError(""); setAuthNotice(""); }}>Back to sign in</button>}
-              {authMode === "login" && authError.toLowerCase().includes("verify your email") && <button className="text-button auth-toggle" onClick={() => { void request<{ message: string }>("/auth/verification", { method: "POST", body: JSON.stringify({ email: verificationEmail }) }).then((result) => { setAuthNotice(result.message); setAuthError(""); }).catch((error: unknown) => setAuthError(error instanceof Error ? error.message : "Could not resend verification email")); }}>Resend verification email</button>}
+              {authMode === "login" && (showResendVerification || authError.toLowerCase().includes("verify your email")) && <button className="text-button auth-toggle" onClick={() => { void request<{ message: string }>("/auth/verification", { method: "POST", body: JSON.stringify({ email: verificationEmail }) }).then((result) => { setAuthNotice(result.message); setAuthError(""); }).catch((error: unknown) => setAuthError(error instanceof Error ? error.message : "Could not resend verification email")); }}>Resend verification email</button>}
               {(authMode === "login" || authMode === "register") && <button className="text-button auth-toggle" onClick={() => { setAuthMode(authMode === "login" ? "register" : "login"); setAuthError(""); setAuthNotice(""); }}>
                 {authMode === "login" ? "New here? Create a workspace" : "Already have a workspace? Sign in"}
               </button>
               }
           </div>
-          <div className="auth-panel-foot"><span>PRIVATE BY DESIGN</span><span>© 2026 ROHIT AI</span></div>
+          <div className="auth-panel-foot"><span>PRIVATE BY DESIGN</span><span>© 2026 TECHIESEE</span></div>
         </section>
       </main>
     );
@@ -690,7 +699,7 @@ function Home() {
   return (
     <main className="app-shell">
       <aside className="sidebar">
-        <div className="sidebar-brand"><AppMark /><span>ROHIT<span className="brand-light">AI</span><small>BUSINESS STUDIO</small></span></div>
+        <div className="sidebar-brand"><AppMark /><span>TECHIESEE<small>BUSINESS WORKSPACE</small></span></div>
         <div className="workspace-switcher"><div className="workspace-avatar">{initials(session.organization.name)}</div><div className="workspace-name"><strong>{session.organization.name}</strong><span>{session.role.toLowerCase()} workspace</span></div><span className={`status-chip ${session.organization.mode === "LIVE" ? "status-open" : "status-escalated"}`}>{session.organization.mode ?? "TRIAL"}</span></div>
         <div className="side-label">WORKSPACE <span>⌘ K</span></div>
         <nav className="main-nav" aria-label="Workspace sections">
@@ -721,7 +730,7 @@ function Home() {
           {view === "channels" && <ChannelsPanel contacts={snapshot.contacts} agents={snapshot.agents} availability={snapshot.channelAvailability} onSend={sendChannelMessage} onCall={startTelecall} />}
           {view === "settings" && <div className="settings-stack"><Settings profile={snapshot.profile} whatsapp={snapshot.whatsapp} onSave={saveProfile} /><PlatformModeControl visible={!!session.isPlatformAdmin} onModeChanged={handlePlatformModeChange} /></div>}
 
-          <footer className="page-footer"><span>ROHIT AI STUDIO <b>·</b> BUILT TO KEEP THE HUMAN IN THE LOOP</span><span>WORKSPACE STATUS <i className="live-pulse" /> OPERATIONAL</span></footer>
+          <footer className="page-footer"><span>TECHIESEE <b>·</b> BUILT TO KEEP THE HUMAN IN THE LOOP</span><span>WORKSPACE STATUS <i className="live-pulse" /> OPERATIONAL</span></footer>
         </div>
       </section>
 
@@ -773,7 +782,7 @@ function EmptyState({ title, detail, action, onAction }: { title: string; detail
 
 function Inbox({ conversations, selected, onSelect, onReply, reply, setReply, onStatus }: { conversations: Conversation[]; selected?: Conversation; onSelect: (id: string) => void; onReply: (event: FormEvent<HTMLFormElement>) => void; reply: string; setReply: (value: string) => void; onStatus: (status: Conversation["status"]) => void }) {
   return <section className="inbox-layout"><aside className="inbox-list"><div className="inbox-list-head"><div><span className="eyebrow">CUSTOMER CARE</span><h3>All conversations</h3></div><span className="inbox-total">{conversations.length}</span></div><div className="inbox-filters"><span className="filter-active">All open</span><span>Assigned to me</span></div>{conversations.length === 0 ? <EmptyState title="The room is quiet" detail="Your new conversations will show up here." /> : conversations.map((conversation) => { const latest = conversation.messages?.[0]; return <button key={conversation.id} onClick={() => onSelect(conversation.id)} className={`conversation-item ${selected?.id === conversation.id ? "selected" : ""}`}><span className="person-avatar">{initials(conversation.contact.name)}</span><span className="conversation-copy"><span className="conversation-title"><strong>{conversation.contact.name}</strong><small>{relativeTime(conversation.updatedAt)}</small></span><span className="conversation-preview">{latest?.content ?? "No messages"}</span><span className="conversation-meta"><span className="channel-pill">{conversation.channel}</span><span className={`status-chip status-${conversation.status.toLowerCase()}`}>{conversation.status}</span></span></span></button>; })}</aside>
-    <section className="message-panel">{selected ? <><header className="message-header"><div className="message-contact"><span className="person-avatar avatar-large">{initials(selected.contact.name)}</span><div><strong>{selected.contact.name}</strong><span>{selected.contact.phone ?? selected.contact.email ?? selected.channel}</span></div></div><div className="message-actions"><span className={`status-chip status-${selected.status.toLowerCase()}`}>{selected.status}</span>{selected.status === "ESCALATED" ? <button className="button button-outline" onClick={() => onStatus("OPEN")}>Reopen AI</button> : <button className="button button-outline" onClick={() => onStatus("ESCALATED")}>Take over</button>}{selected.status !== "CLOSED" && <button className="icon-button resolve-button" onClick={() => onStatus("CLOSED")} title="Resolve conversation" aria-label="Resolve conversation">✓</button>}</div></header><div className="message-stream"><div className="stream-date">{new Date(selected.updatedAt).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}</div>{selected.messages?.map((message) => <div key={message.id} className={`message-row ${message.sender === "CUSTOMER" ? "from-customer" : "from-team"}`}><div className="message-bubble"><span className="message-sender">{message.sender === "AI" ? "ROHIT AI" : message.sender === "HUMAN" ? "YOUR TEAM" : selected.contact.name.toUpperCase()}</span><p>{message.content}</p><span className="message-time">{new Date(message.createdAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}{message.isDemo && <i> · DEMO</i>}</span></div></div>)}</div><form className="reply-composer" onSubmit={onReply}><textarea aria-label="Write a reply" placeholder={selected.status === "CLOSED" ? "Reopen this conversation to reply" : "Write a thoughtful reply…"} value={reply} onChange={(event) => setReply(event.target.value)} disabled={selected.status === "CLOSED"} /><div className="composer-foot"><span>HUMAN REPLY <b>·</b> AI PAUSED AFTER TAKEOVER</span><button className="button button-dark" type="submit" disabled={!reply.trim() || selected.status === "CLOSED"}>Send reply <span>↗</span></button></div></form></> : <div className="no-selection"><span className="empty-ring">↖</span><h3>Choose a conversation</h3><p>Select a customer from the list to read and reply.</p></div>}</section></section>;
+    <section className="message-panel">{selected ? <><header className="message-header"><div className="message-contact"><span className="person-avatar avatar-large">{initials(selected.contact.name)}</span><div><strong>{selected.contact.name}</strong><span>{selected.contact.phone ?? selected.contact.email ?? selected.channel}</span></div></div><div className="message-actions"><span className={`status-chip status-${selected.status.toLowerCase()}`}>{selected.status}</span>{selected.status === "ESCALATED" ? <button className="button button-outline" onClick={() => onStatus("OPEN")}>Reopen AI</button> : <button className="button button-outline" onClick={() => onStatus("ESCALATED")}>Take over</button>}{selected.status !== "CLOSED" && <button className="icon-button resolve-button" onClick={() => onStatus("CLOSED")} title="Resolve conversation" aria-label="Resolve conversation">✓</button>}</div></header><div className="message-stream"><div className="stream-date">{new Date(selected.updatedAt).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}</div>{selected.messages?.map((message) => <div key={message.id} className={`message-row ${message.sender === "CUSTOMER" ? "from-customer" : "from-team"}`}><div className="message-bubble"><span className="message-sender">{message.sender === "AI" ? "TECHIESEE AI" : message.sender === "HUMAN" ? "YOUR TEAM" : selected.contact.name.toUpperCase()}</span><p>{message.content}</p><span className="message-time">{new Date(message.createdAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}{message.isDemo && <i> · DEMO</i>}</span></div></div>)}</div><form className="reply-composer" onSubmit={onReply}><textarea aria-label="Write a reply" placeholder={selected.status === "CLOSED" ? "Reopen this conversation to reply" : "Write a thoughtful reply…"} value={reply} onChange={(event) => setReply(event.target.value)} disabled={selected.status === "CLOSED"} /><div className="composer-foot"><span>HUMAN REPLY <b>·</b> AI PAUSED AFTER TAKEOVER</span><button className="button button-dark" type="submit" disabled={!reply.trim() || selected.status === "CLOSED"}>Send reply <span>↗</span></button></div></form></> : <div className="no-selection"><span className="empty-ring">↖</span><h3>Choose a conversation</h3><p>Select a customer from the list to read and reply.</p></div>}</section></section>;
 }
 
 function Pipeline({ leads, canCreateLead, onAdd, onMove }: { leads: Lead[]; canCreateLead: boolean; onAdd: () => void; onMove: (id: string, stage: LeadStage) => void }) {
@@ -1086,13 +1095,13 @@ function PlatformModeControl({ visible, onModeChanged }: { visible: boolean; onM
 function ActionModal({ kind, contacts, onClose, onSubmit }: { kind: Exclude<ModalKind, null>; contacts: Contact[]; onClose: () => void; onSubmit: (event: FormEvent<HTMLFormElement>) => void }) {
   if (kind !== "lead") return <ActionModalCore kind={kind} onClose={onClose} onSubmit={onSubmit} />;
 
-  return <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="action-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div className="modal-top"><span className="eyebrow">ROHIT AI STUDIO / PIPELINE</span><button className="icon-button" onClick={onClose} aria-label="Close dialog">×</button></div><h2 id="modal-title">Add a new lead</h2><p>Attach an opportunity to someone already in your contacts.</p><form onSubmit={onSubmit} className="modal-form"><label className="field field-span"><span>Contact</span><select name="contactId" defaultValue="" required><option value="" disabled>Select a contact</option>{contacts.map((contact) => <option value={contact.id} key={contact.id}>{contact.name}{contact.company ? ` · ${contact.company}` : ""}</option>)}</select></label><Field label="Source" name="source" placeholder="WhatsApp, website, referral…" /><Field label="Potential value (INR)" name="value" type="number" placeholder="15000" /><div className="modal-actions"><button className="button button-quiet" type="button" onClick={onClose}>Cancel</button><button className="button button-dark" type="submit">Add to pipeline <span>↗</span></button></div></form></section></div>;
+  return <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="action-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div className="modal-top"><span className="eyebrow">TECHIESEE / PIPELINE</span><button className="icon-button" onClick={onClose} aria-label="Close dialog">×</button></div><h2 id="modal-title">Add a new lead</h2><p>Attach an opportunity to someone already in your contacts.</p><form onSubmit={onSubmit} className="modal-form"><label className="field field-span"><span>Contact</span><select name="contactId" defaultValue="" required><option value="" disabled>Select a contact</option>{contacts.map((contact) => <option value={contact.id} key={contact.id}>{contact.name}{contact.company ? ` · ${contact.company}` : ""}</option>)}</select></label><Field label="Source" name="source" placeholder="WhatsApp, website, referral…" /><Field label="Potential value (INR)" name="value" type="number" placeholder="15000" /><div className="modal-actions"><button className="button button-quiet" type="button" onClick={onClose}>Cancel</button><button className="button button-dark" type="submit">Add to pipeline <span>↗</span></button></div></form></section></div>;
 }
 
 function ActionModalCore({ kind, onClose, onSubmit }: { kind: "contact" | "product" | "simulate"; onClose: () => void; onSubmit: (event: FormEvent<HTMLFormElement>) => void }) {
   const titles = { contact: "Add a new person", product: "Add an offer", simulate: "Send a test message" };
   const subtitles = { contact: "A new relationship for your business.", product: "Give your assistant accurate details to quote.", simulate: "Watch the assistant handle a customer message end to end." };
-  return <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="action-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div className="modal-top"><span className="eyebrow">ROHIT AI STUDIO / {kind === "simulate" ? "WHATSAPP LAB" : "WORKSPACE"}</span><button className="icon-button" onClick={onClose} aria-label="Close dialog">×</button></div><h2 id="modal-title">{titles[kind]}</h2><p>{subtitles[kind]}</p><form onSubmit={onSubmit} className="modal-form">{kind === "contact" && <><Field label="Full name" name="name" placeholder="Customer name" required /><Field label="Phone number" name="phone" placeholder="+91 98765 43210" /><Field label="Email address" name="email" type="email" placeholder="name@email.com" /><Field label="Company" name="company" placeholder="Company or studio" /></>}{kind === "product" && <><Field label="Offer name" name="name" placeholder="Personal training session" required /><Field label="Price (INR)" name="price" type="number" placeholder="2500" required /><Field label="Category" name="category" placeholder="Consultation, service…" /><Field label="Duration in minutes" name="durationMin" type="number" placeholder="60" /><label className="field field-span"><span>Description</span><textarea name="description" rows={3} placeholder="What is included?" /></label></>}{kind === "simulate" && <><Field label="Customer name" name="contactName" placeholder="Aarav Sharma" required /><Field label="WhatsApp number" name="contactPhone" placeholder="+91 98765 43210" required /><label className="field field-span"><span>Incoming message</span><textarea name="message" rows={4} defaultValue="Hi! Could you tell me about your services and pricing?" required /></label><div className="simulator-hint"><span>✳</span><p>This uses the same AI orchestrator as WhatsApp. Add an OpenAI key and business instructions for a live AI reply.</p></div></>}{<div className="modal-actions"><button className="button button-quiet" type="button" onClick={onClose}>Cancel</button><button className="button button-dark" type="submit">{kind === "simulate" ? "Send to assistant" : kind === "product" ? "Save offer" : "Add contact"}<span>↗</span></button></div>}</form></section></div>;
+  return <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="action-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div className="modal-top"><span className="eyebrow">TECHIESEE / {kind === "simulate" ? "WHATSAPP LAB" : "WORKSPACE"}</span><button className="icon-button" onClick={onClose} aria-label="Close dialog">×</button></div><h2 id="modal-title">{titles[kind]}</h2><p>{subtitles[kind]}</p><form onSubmit={onSubmit} className="modal-form">{kind === "contact" && <><Field label="Full name" name="name" placeholder="Customer name" required /><Field label="Phone number" name="phone" placeholder="+91 98765 43210" /><Field label="Email address" name="email" type="email" placeholder="name@email.com" /><Field label="Company" name="company" placeholder="Company or studio" /></>}{kind === "product" && <><Field label="Offer name" name="name" placeholder="Personal training session" required /><Field label="Price (INR)" name="price" type="number" placeholder="2500" required /><Field label="Category" name="category" placeholder="Consultation, service…" /><Field label="Duration in minutes" name="durationMin" type="number" placeholder="60" /><label className="field field-span"><span>Description</span><textarea name="description" rows={3} placeholder="What is included?" /></label></>}{kind === "simulate" && <><Field label="Customer name" name="contactName" placeholder="Aarav Sharma" required /><Field label="WhatsApp number" name="contactPhone" placeholder="+91 98765 43210" required /><label className="field field-span"><span>Incoming message</span><textarea name="message" rows={4} defaultValue="Hi! Could you tell me about your services and pricing?" required /></label><div className="simulator-hint"><span>✳</span><p>This uses the same AI orchestrator as WhatsApp. Add an OpenAI key and business instructions for a live AI reply.</p></div></>}{<div className="modal-actions"><button className="button button-quiet" type="button" onClick={onClose}>Cancel</button><button className="button button-dark" type="submit">{kind === "simulate" ? "Send to assistant" : kind === "product" ? "Save offer" : "Add contact"}<span>↗</span></button></div>}</form></section></div>;
 }
 
 export default Home;

@@ -6,7 +6,7 @@ const siteUrl = getPublicSiteUrl();
 export const metadata = {
   ...(siteUrl ? { metadataBase: new URL(siteUrl) } : {}),
   metadataBase: new URL(siteUrl ?? "http://localhost:3000"),
-  title: "Rohit AI Studio | Business, in motion",
+  title: "Techiesee | Business, in motion",
   description: "A thoughtful command center for your leads, conversations, appointments, and AI-powered customer care.",
 };
 

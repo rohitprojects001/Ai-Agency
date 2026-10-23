@@ -1,0 +1,2 @@
+ALTER TABLE "users"
+ADD COLUMN "loginLockoutLevel" INTEGER NOT NULL DEFAULT 0;

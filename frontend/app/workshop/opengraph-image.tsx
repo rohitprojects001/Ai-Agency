@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "Rohit AI Studio — a calmer way to run your business";
+export const alt = "Techiesee — a calmer way to run your business";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -26,7 +26,7 @@ export default function OpenGraphImage() {
               <div key={color} style={{ width: 14, height: 14, borderRadius: 3, background: color }} />
             ))}
           </div>
-          ROHIT AI <span style={{ color: "#d1f36b" }}>STUDIO</span>
+          TECHIESEE
         </div>
         <div style={{ display: "flex", flexDirection: "column", maxWidth: 900 }}>
           <div style={{ color: "#bdc9b9", fontSize: 18, letterSpacing: 4 }}>YOUR BUSINESS, IN MOTION</div>

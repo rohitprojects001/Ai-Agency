@@ -22,6 +22,7 @@ model User {
   name                String
   emailVerifiedAt     DateTime?
   failedLoginAttempts Int           @default(0)
+  loginLockoutLevel   Int           @default(0)
   lockedUntil         DateTime?
   status              AccountStatus @default(ACTIVE)
   createdAt           DateTime      @default(now())

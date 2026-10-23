@@ -5,7 +5,7 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import rateLimit from "express-rate-limit";
 import { asyncHandler } from "../lib/async-handler";
-import { hashAuthToken, sendAuthChallenge } from "../lib/auth-email";
+import { hashAuthToken, sendAuthChallenge, sendExistingAccountNotice } from "../lib/auth-email";
 import { prisma } from "../lib/prisma";
 import { getSessionTtlSeconds, signAuthToken, verifyAuthToken, type AuthTokenPayload } from "../lib/jwt";
 import { clearSessionCookie, readSessionToken, requireAuth, setSessionCookie } from "../middleware/requireAuth";
@@ -21,12 +21,48 @@ const authAttemptLimiter = rateLimit({
   message: { error: "Too many authentication attempts. Try again in 15 minutes." },
 });
 
+const loginEmailLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => typeof req.body?.email !== "string",
+  keyGenerator: (req) => `email:${normalizedEmail(req.body.email)}`,
+  message: { error: "Too many sign-in attempts for this email. Try again in 15 minutes." },
+});
+
+const dummyPasswordHash = bcrypt.hash("unused-account-password", 12);
+const registrationAcceptedMessage = "If you can sign up with this email, check your inbox for next steps. If a verification email does not arrive, return here and choose Resend verification email.";
+
 function slugify(name: string) {
   return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "workspace";
 }
 
 function normalizedEmail(email: string) {
   return email.trim().toLowerCase();
+}
+
+function isEmailUniqueConstraintError(error: unknown): boolean {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2002") return false;
+  const target = error.meta?.target;
+  return Array.isArray(target)
+    ? target.includes("email")
+    : typeof target === "string" && target.includes("email");
+}
+
+async function notifyExistingAccount(user: { name: string; email: string }) {
+  try {
+    await sendExistingAccountNotice(user);
+  } catch (error) {
+    console.error("Existing-account notice could not be sent:", error);
+  }
+}
+
+function respondToRegistration(res: Response) {
+  return res.status(202).json({
+    verificationRequired: true,
+    message: registrationAcceptedMessage,
+  });
 }
 
 async function createRegisteredWorkspace(input: { email: string; name: string; businessName: string; passwordHash: string }) {
@@ -75,19 +111,28 @@ async function beginRegistration(req: Request, res: Response) {
   if (!parsed.success) return res.status(400).json({ error: "Validation failed", issues: parsed.error.issues });
   const { name, password, businessName } = parsed.data;
   const email = normalizedEmail(parsed.data.email);
-  if (await prisma.user.findUnique({ where: { email } })) {
-    return res.status(409).json({ error: "An account with this email already exists" });
+  const existingUser = await prisma.user.findUnique({ where: { email }, select: { name: true, email: true } });
+  if (existingUser) {
+    await notifyExistingAccount(existingUser);
+    return respondToRegistration(res);
   }
 
   const passwordHash = await bcrypt.hash(password, 12);
-  const { user } = await createRegisteredWorkspace({ email, name, businessName, passwordHash });
+  let user;
+  try {
+    ({ user } = await createRegisteredWorkspace({ email, name, businessName, passwordHash }));
+  } catch (error) {
+    if (!isEmailUniqueConstraintError(error)) throw error;
+    const racedUser = await prisma.user.findUnique({ where: { email }, select: { name: true, email: true } });
+    if (racedUser) await notifyExistingAccount(racedUser);
+    return respondToRegistration(res);
+  }
   try {
     await sendAuthChallenge(user, "VERIFY_EMAIL");
   } catch (error) {
     console.error("Registration verification email failed:", error);
-    return res.status(503).json({ error: "Your account was created, but its verification email could not be sent. Check email configuration, then request another verification email." });
   }
-  return res.status(202).json({ verificationRequired: true, message: "Check your email for a verification link before signing in." });
+  return respondToRegistration(res);
 }
 
 authRouter.post("/register", authAttemptLimiter, asyncHandler(beginRegistration));
@@ -98,7 +143,7 @@ const loginSchema = z.object({
   password: z.string().min(1).max(128),
 });
 
-authRouter.post("/login", authAttemptLimiter, asyncHandler(async (req, res) => {
+authRouter.post("/login", authAttemptLimiter, loginEmailLimiter, asyncHandler(async (req, res) => {
   const parsed = loginSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "Validation failed", issues: parsed.error.issues });
   const email = normalizedEmail(parsed.data.email);
@@ -107,32 +152,39 @@ authRouter.post("/login", authAttemptLimiter, asyncHandler(async (req, res) => {
     include: { memberships: { where: { status: "ACTIVE", organization: { status: "ACTIVE" } }, include: { organization: true }, orderBy: { createdAt: "asc" } } },
   });
   const invalid = () => res.status(401).json({ error: "Invalid email or password" });
-  if (!user) return invalid();
+  if (!user) {
+    await bcrypt.compare(parsed.data.password, await dummyPasswordHash);
+    return invalid();
+  }
   const validPassword = await bcrypt.compare(parsed.data.password, user.passwordHash);
+  if (user.lockedUntil && user.lockedUntil > new Date()) return invalid();
   if (!validPassword) {
     if (!user.lockedUntil || user.lockedUntil <= new Date()) {
       const attempt = await prisma.user.update({
         where: { id: user.id },
         data: { failedLoginAttempts: { increment: 1 } },
-        select: { failedLoginAttempts: true },
+        select: { failedLoginAttempts: true, loginLockoutLevel: true },
       });
       if (attempt.failedLoginAttempts >= 10) {
+        const loginLockoutLevel = attempt.loginLockoutLevel + 1;
+        const lockDurationMs = Math.min(15 * 60 * 1000 * 2 ** (loginLockoutLevel - 1), 24 * 60 * 60 * 1000);
         await prisma.user.update({
           where: { id: user.id },
-          data: { failedLoginAttempts: 0, lockedUntil: new Date(Date.now() + 15 * 60 * 1000) },
+          data: {
+            failedLoginAttempts: 0,
+            loginLockoutLevel,
+            lockedUntil: new Date(Date.now() + lockDurationMs),
+          },
         });
       }
     }
     return invalid();
   }
   if (user.status !== "ACTIVE") return res.status(403).json({ error: "This account is suspended. Contact support." });
-  if (user.lockedUntil && user.lockedUntil > new Date()) {
-    return res.status(423).json({ error: "Sign-in is temporarily locked after repeated failed attempts. Try again later." });
-  }
-  if (user.failedLoginAttempts > 0 || user.lockedUntil) {
+  if (user.failedLoginAttempts > 0 || user.lockedUntil || user.loginLockoutLevel > 0) {
     await prisma.user.update({
       where: { id: user.id },
-      data: { failedLoginAttempts: 0, lockedUntil: null },
+      data: { failedLoginAttempts: 0, loginLockoutLevel: 0, lockedUntil: null },
     });
   }
   if (!user.emailVerifiedAt) {

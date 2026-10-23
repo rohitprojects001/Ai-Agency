@@ -111,9 +111,9 @@ export default function SalesLanding() {
   return (
     <main ref={siteRef} className={`${styles.site} ${motionReady ? styles.motionReady : ""}`}>
       <header className={styles.nav}>
-        <a className={styles.brand} href="#" aria-label="Rohit AI Studio home">
+        <a className={styles.brand} href="#" aria-label="Techiesee home">
           <span className={styles.brandMark}><i /><i /><i /><i /></span>
-          <span>ROHIT AI <b>STUDIO</b></span>
+          <span>TECHIESEE</span>
         </a>
         <nav aria-label="Main navigation">
           <a href="#features">What you get</a>
@@ -243,7 +243,7 @@ export default function SalesLanding() {
       </section>
 
       <footer className={styles.footer}>
-        <a className={styles.brand} href="#"><span className={styles.brandMark}><i /><i /><i /><i /></span><span>ROHIT AI <b>STUDIO</b></span></a>
+        <a className={styles.brand} href="#"><span className={styles.brandMark}><i /><i /><i /><i /></span><span>TECHIESEE</span></a>
         <span>BUILT TO KEEP THE HUMAN IN THE LOOP.</span>
         <a href="#plans">Explore plans ↑</a>
       </footer>
