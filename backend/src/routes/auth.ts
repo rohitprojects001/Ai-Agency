@@ -32,7 +32,7 @@ const loginEmailLimiter = rateLimit({
 });
 
 const dummyPasswordHash = bcrypt.hash("unused-account-password", 12);
-const registrationAcceptedMessage = "If you can sign up with this email, check your inbox for next steps. If a verification email does not arrive, return here and choose Resend verification email.";
+const registrationAcceptedMessage = "Your workspace is ready. You can continue with your account immediately.";
 
 function slugify(name: string) {
   return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "workspace";
@@ -58,11 +58,8 @@ async function notifyExistingAccount(user: { name: string; email: string }) {
   }
 }
 
-function respondToRegistration(res: Response) {
-  return res.status(202).json({
-    verificationRequired: true,
-    message: registrationAcceptedMessage,
-  });
+function respondToRegistration(res: Response, message = registrationAcceptedMessage) {
+  return res.status(201).json({ message });
 }
 
 async function createRegisteredWorkspace(input: { email: string; name: string; businessName: string; passwordHash: string }) {
@@ -118,21 +115,29 @@ async function beginRegistration(req: Request, res: Response) {
   }
 
   const passwordHash = await bcrypt.hash(password, 12);
-  let user;
+  let user; let organization; let membership;
   try {
-    ({ user } = await createRegisteredWorkspace({ email, name, businessName, passwordHash }));
+    ({ user, organization, membership } = await createRegisteredWorkspace({ email, name, businessName, passwordHash }));
   } catch (error) {
     if (!isEmailUniqueConstraintError(error)) throw error;
     const racedUser = await prisma.user.findUnique({ where: { email }, select: { name: true, email: true } });
     if (racedUser) await notifyExistingAccount(racedUser);
     return respondToRegistration(res);
   }
-  try {
-    await sendAuthChallenge(user, "VERIFY_EMAIL");
-  } catch (error) {
-    console.error("Registration verification email failed:", error);
-  }
-  return respondToRegistration(res);
+
+  const session = await createSession(user.id, organization.id, membership.role, req);
+  writeAuthCookie(res, user.id, organization.id, membership.role, session.id);
+  await prisma.auditLog.create({
+    data: { organizationId: organization.id, userId: user.id, action: "auth.session_created" },
+  });
+
+  return res.status(201).json({
+    message: registrationAcceptedMessage,
+    user: { id: user.id, name: user.name, email: user.email },
+    organization: { id: organization.id, name: organization.name, slug: organization.slug },
+    role: membership.role,
+    expiresAt: session.expiresAt,
+  });
 }
 
 authRouter.post("/register", authAttemptLimiter, asyncHandler(beginRegistration));
@@ -187,9 +192,6 @@ authRouter.post("/login", authAttemptLimiter, loginEmailLimiter, asyncHandler(as
       data: { failedLoginAttempts: 0, loginLockoutLevel: 0, lockedUntil: null },
     });
   }
-  if (!user.emailVerifiedAt) {
-    return res.status(403).json({ error: "Verify your email address before signing in.", verificationRequired: true });
-  }
   const membership = user.memberships[0];
   if (!membership) return res.status(403).json({ error: "This account has no active workspace. Request access to a workspace to continue." });
 
@@ -206,48 +208,7 @@ authRouter.post("/login", authAttemptLimiter, loginEmailLimiter, asyncHandler(as
   });
 }));
 
-authRouter.post("/verify-email", authAttemptLimiter, asyncHandler(async (req, res) => {
-  const parsed = z.object({ token: z.string().min(32).max(200) }).safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: "A valid verification link is required." });
-  const tokenHash = hashAuthToken(parsed.data.token);
-  const challenge = await prisma.authChallenge.findFirst({
-    where: { tokenHash, purpose: "VERIFY_EMAIL", consumedAt: null, expiresAt: { gt: new Date() } },
-    select: { id: true, userId: true },
-  });
-  if (!challenge) return res.status(400).json({ error: "This verification link is invalid or expired. Request a new one." });
-
-  const verified = await prisma.$transaction(async (tx) => {
-    const consumed = await tx.authChallenge.updateMany({
-      where: { id: challenge.id, consumedAt: null, expiresAt: { gt: new Date() } },
-      data: { consumedAt: new Date() },
-    });
-    if (consumed.count !== 1) return false;
-    await tx.user.update({ where: { id: challenge.userId }, data: { emailVerifiedAt: new Date() } });
-    await tx.auditLog.createMany({
-      data: (await tx.organizationMember.findMany({ where: { userId: challenge.userId, status: "ACTIVE" }, select: { organizationId: true } }))
-        .map(({ organizationId }) => ({ organizationId, userId: challenge.userId, action: "auth.email_verified" })),
-    });
-    return true;
-  });
-  if (!verified) return res.status(400).json({ error: "This verification link has already been used or has expired." });
-  return res.json({ message: "Email verified. You can now sign in." });
-}));
-
 const emailOnlySchema = z.object({ email: z.string().trim().email().max(254) });
-
-authRouter.post("/verification", authAttemptLimiter, asyncHandler(async (req, res) => {
-  const parsed = emailOnlySchema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: "Enter a valid email address." });
-  const user = await prisma.user.findUnique({ where: { email: normalizedEmail(parsed.data.email) } });
-  if (user && !user.emailVerifiedAt) {
-    try {
-      await sendAuthChallenge(user, "VERIFY_EMAIL");
-    } catch (error) {
-      console.error("Verification email could not be sent:", error);
-    }
-  }
-  return res.status(202).json({ message: "If the account needs verification, a new link will be emailed." });
-}));
 
 authRouter.post("/forgot-password", authAttemptLimiter, asyncHandler(async (req, res) => {
   const parsed = emailOnlySchema.safeParse(req.body);
@@ -385,13 +346,13 @@ authRouter.post("/sessions/:sessionId/revoke", requireAuth, asyncHandler(async (
 
 authRouter.get("/me", requireAuth, asyncHandler(async (req, res) => {
   const [user, organization] = await Promise.all([
-    prisma.user.findUnique({ where: { id: req.auth!.userId }, select: { id: true, name: true, email: true, emailVerifiedAt: true } }),
+    prisma.user.findUnique({ where: { id: req.auth!.userId }, select: { id: true, name: true, email: true } }),
     prisma.organization.findUnique({
       where: { id: req.auth!.organizationId },
       select: { id: true, name: true, slug: true, mode: true, status: true, trialStartedAt: true, trialEndsAt: true },
     }),
   ]);
-  if (!user || !organization || !user.emailVerifiedAt) return res.status(401).json({ error: "Account or workspace access is no longer active." });
+  if (!user || !organization) return res.status(401).json({ error: "Account or workspace access is no longer active." });
   const administrators = (process.env.SUPER_ADMIN_EMAILS ?? "").split(",").map((email) => email.trim().toLowerCase());
   return res.json({ user, organization, role: req.auth!.role, isPlatformAdmin: administrators.includes(user.email.toLowerCase()) });
 }));

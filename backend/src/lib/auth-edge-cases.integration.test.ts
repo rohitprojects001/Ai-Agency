@@ -100,15 +100,16 @@ function registrationBody(email: string, businessName: string) {
   };
 }
 
-test("registration uses the same 202 response for existing users and failed verification mail", async () => {
+test("registration creates a workspace immediately without email verification", async () => {
   const existing = await api("/api/auth/register", registrationBody(existingEmail, "Existing"));
   const fresh = await api("/api/auth/register", registrationBody(registrationEmail, "Fresh"));
   assert.equal(existing.status, 202);
-  assert.equal(fresh.status, 202);
-  const existingBody = await existing.json() as { verificationRequired: boolean; message: string };
-  const freshBody = await fresh.json() as { verificationRequired: boolean; message: string };
-  assert.deepEqual(existingBody, freshBody);
-  assert.match(freshBody.message, /Resend verification email/);
+  assert.equal(fresh.status, 201);
+  const existingBody = await existing.json() as { message: string };
+  const freshBody = await fresh.json() as { user: { email: string }; organization: { name: string }; role: string };
+  assert.match(existingBody.message, /next steps/);
+  assert.equal(freshBody.user.email, registrationEmail);
+  assert.equal(freshBody.role, "OWNER");
 
   const created = await prisma.user.findUnique({ where: { email: registrationEmail } });
   assert.ok(created);

@@ -8,7 +8,7 @@ import styles from "./workspace-access.module.css";
 const configuredApi = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
 type Workspace = { slug: string; name: string; role: string };
 type AccessRequest = { status: "PENDING" | "APPROVED" | "DENIED"; organization: { slug: string; name: string } };
-type PendingRequest = { id: string; createdAt: string; user: { id: string; name: string; email: string; emailVerifiedAt: string | null } };
+type PendingRequest = { id: string; createdAt: string; user: { id: string; name: string; email: string } };
 type ViewState = "loading" | "signed-out" | "member" | "requested" | "error";
 
 function apiBase() {
@@ -142,7 +142,7 @@ export default function WorkspaceAccess({ slug }: { slug: string }) {
         {state === "loading" && <><h1>Checking your access.</h1><p>Verifying your account and workspace membership.</p></>}
         {state === "signed-out" && <>
           <h1>Sign in to request access.</h1>
-          <p>This link identifies a workspace; it does not grant access. Sign in with your verified account, then return here to request membership.</p>
+          <p>This link identifies a workspace; it does not grant access. Sign in with your account, then return here to request membership.</p>
           <Link className={styles.button} href={`/?returnTo=${encodeURIComponent(`/agency/${slug}`)}`}>Go to secure sign in <span>↗</span></Link>
         </>}
         {state === "member" && <>
@@ -153,10 +153,10 @@ export default function WorkspaceAccess({ slug }: { slug: string }) {
             <div className={styles.reviewHeading}>PENDING ACCESS REQUESTS <span>{pendingRequests.length.toString().padStart(2, "0")}</span></div>
             {pendingRequests.length === 0 ? <p className={styles.reviewEmpty}>No requests need your review.</p> : pendingRequests.map((request) => (
               <div className={styles.reviewRequest} key={request.id}>
-                <div><strong>{request.user.name}</strong><span>{request.user.email}</span>{!request.user.emailVerifiedAt && <small>Email not verified</small>}</div>
+                <div><strong>{request.user.name}</strong><span>{request.user.email}</span></div>
                 <div className={styles.reviewActions}>
                   <button onClick={() => void reviewAccess(request.id, "deny")} disabled={busy}>Deny</button>
-                  <button onClick={() => void reviewAccess(request.id, "approve")} disabled={busy || !request.user.emailVerifiedAt}>Approve</button>
+                  <button onClick={() => void reviewAccess(request.id, "approve")} disabled={busy}>Approve</button>
                 </div>
               </div>
             ))}

@@ -82,7 +82,7 @@ export const requireAuth = asyncHandler(async (req, res, next) => {
       organizationId: claims.organizationId,
       revokedAt: null,
       expiresAt: { gt: new Date() },
-      user: { emailVerifiedAt: { not: null }, status: "ACTIVE" },
+      user: { status: "ACTIVE" },
       organization: {
         status: "ACTIVE",
         members: { some: { userId: claims.userId, status: "ACTIVE" } },

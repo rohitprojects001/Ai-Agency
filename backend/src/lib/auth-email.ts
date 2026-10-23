@@ -76,8 +76,8 @@ export async function sendExistingAccountNotice(user: { name: string; email: str
     from,
     to: user.email,
     subject: "You already have a Rohit AI Studio account",
-    text: `Hi ${user.name},\n\nYou already have an account with this email address. Sign in here:\n${signInUrl}\n\nIf you have not verified your email, choose "Resend verification email" on the sign-in screen.`,
-    html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#17201c"><h1>You already have an account</h1><p>Hi ${escapeHtml(user.name)},</p><p>You already have a Rohit AI Studio account with this email address.</p><p><a href="${escapeHtml(signInUrl)}">Sign in</a>. If you have not verified your email, choose "Resend verification email" on the sign-in screen.</p></div>`,
+    text: `Hi ${user.name},\n\nYou already have an account with this email address. Sign in here:\n${signInUrl}`,
+    html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#17201c"><h1>You already have an account</h1><p>Hi ${escapeHtml(user.name)},</p><p>You already have a Rohit AI Studio account with this email address.</p><p><a href="${escapeHtml(signInUrl)}">Sign in</a>.</p></div>`,
   });
 
   if (result.error) throw new Error(`Existing-account email could not be sent: ${result.error.message}`);

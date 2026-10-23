@@ -60,7 +60,7 @@ accessRequestsRouter.get("/organization/:slug", organizationAdmin, asyncHandler(
     select: {
       id: true,
       createdAt: true,
-      user: { select: { id: true, name: true, email: true, emailVerifiedAt: true } },
+      user: { select: { id: true, name: true, email: true } },
     },
     orderBy: { createdAt: "asc" },
   });
@@ -76,10 +76,9 @@ async function decideRequest(input: {
   return prisma.$transaction(async (tx) => {
     const accessRequest = await tx.accessRequest.findFirst({
       where: { id: input.requestId, organizationId: input.organizationId, status: "PENDING" },
-      include: { user: { select: { id: true, emailVerifiedAt: true } } },
+      include: { user: { select: { id: true } } },
     });
     if (!accessRequest) return false;
-    if (input.approve && !accessRequest.user.emailVerifiedAt) return "unverified" as const;
     if (input.approve) {
       const organization = await tx.organization.findUnique({
         where: { id: input.organizationId },
@@ -138,7 +137,6 @@ accessRequestsRouter.post("/organization/:slug/:requestId/:decision", organizati
     reviewerId: req.auth!.userId,
     approve: decision === "approve",
   });
-  if (result === "unverified") return res.status(409).json({ error: "This user must verify their email before workspace access can be granted." });
   if (result === "trial_limit") return res.status(409).json({ error: "The workspace trial user limit has been reached." });
   if (!result) return res.status(409).json({ error: "This pending request was not found or has already been reviewed." });
   return res.json({ message: decision === "approve" ? "Workspace access approved." : "Workspace access denied." });
@@ -150,7 +148,7 @@ accessRequestsRouter.get("/admin/pending", requireSuperAdmin, asyncHandler(async
     select: {
       id: true,
       createdAt: true,
-      user: { select: { id: true, name: true, email: true, emailVerifiedAt: true } },
+      user: { select: { id: true, name: true, email: true } },
       organization: { select: { id: true, name: true, slug: true } },
     },
     orderBy: { createdAt: "asc" },
@@ -172,7 +170,6 @@ accessRequestsRouter.post("/admin/:requestId/:decision", requireSuperAdmin, asyn
     reviewerId: req.auth!.userId,
     approve: decision === "approve",
   });
-  if (result === "unverified") return res.status(409).json({ error: "This user must verify their email before workspace access can be granted." });
   if (result === "trial_limit") return res.status(409).json({ error: "The workspace trial user limit has been reached." });
   if (!result) return res.status(409).json({ error: "This pending request was already reviewed." });
   return res.json({ message: decision === "approve" ? "Workspace access approved." : "Workspace access denied." });

@@ -264,8 +264,6 @@ function Home() {
   const [authError, setAuthError] = useState("");
   const [authNotice, setAuthNotice] = useState("");
   const [resetToken, setResetToken] = useState("");
-  const [verificationEmail, setVerificationEmail] = useState("");
-  const [showResendVerification, setShowResendVerification] = useState(false);
   const [miraOpen, setMiraOpen] = useState(false);
 
   useEffect(() => {
@@ -284,13 +282,6 @@ function Home() {
         setAuthMode("reset");
       }, 0);
       window.history.replaceState({}, "", window.location.pathname);
-    } else if (authAction === "verify-email" && challengeToken) {
-      window.history.replaceState({}, "", window.location.pathname);
-      void request<{ message: string }>("/auth/verify-email", {
-        method: "POST",
-        body: JSON.stringify({ token: challengeToken }),
-      }).then((result) => setAuthNotice(result.message))
-        .catch((error: unknown) => setAuthError(error instanceof Error ? error.message : "Email verification failed"));
     }
     const timer = window.setTimeout(() => {
       setToken("cookie-session");
@@ -380,7 +371,6 @@ function Home() {
     const values = Object.fromEntries(new FormData(event.currentTarget).entries());
     try {
       const email = String(values.email ?? "").trim().toLowerCase();
-      setVerificationEmail(email);
       if (authMode === "forgot") {
         const result = await request<{ message: string }>("/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }) });
         setAuthNotice(result.message);
@@ -398,18 +388,11 @@ function Home() {
       const body = authMode === "register"
         ? { name: values.name, email, password: values.password, businessName: values.businessName }
         : { email, password: values.password };
-      const result = await request<{ verificationRequired?: boolean; message?: string; user: User; organization: Organization; role: string }>(endpoint, {
+      const result = await request<{ message?: string; user: User; organization: Organization; role: string }>(endpoint, {
         method: "POST",
         body: JSON.stringify(body),
       });
 
-      if (result.verificationRequired) {
-        setAuthNotice(result.message ?? "Check your email for a verification link before signing in.");
-        setShowResendVerification(true);
-        setAuthMode("login");
-        setBooting(false);
-        return;
-      }
       window.localStorage.removeItem(TOKEN_KEY);
       const returnTo = window.sessionStorage.getItem("rohit-ai-return-to");
       if (returnTo?.startsWith("/agency/") && !returnTo.startsWith("//") && !returnTo.includes("\\")) {
@@ -675,7 +658,7 @@ function Home() {
               <form className="auth-form" onSubmit={handleAuth}>
                 {authMode === "register" && <Field label="Your name" name="name" placeholder="Your name" required />}
                 {authMode === "register" && <Field label="Business name" name="businessName" placeholder="Your business" required />}
-                {authMode !== "reset" && <Field label="Email address" name="email" type="email" placeholder="you@company.com" defaultValue={verificationEmail} required />}
+                {authMode !== "reset" && <Field label="Email address" name="email" type="email" placeholder="you@company.com" required />}
                 {(authMode === "login" || authMode === "register" || authMode === "reset") && <Field label={authMode === "reset" ? "New password" : "Password"} name="password" type="password" placeholder="At least 12 characters" minLength={authMode === "login" ? undefined : 12} required />}
                 {authError && <p className="form-error">{authError}</p>}
                 {authNotice && <p className="auth-notice">{authNotice}</p>}
@@ -684,7 +667,6 @@ function Home() {
               {authMode === "login" && <button className="text-button auth-toggle" onClick={() => { setAuthMode("forgot"); setAuthError(""); setAuthNotice(""); }}>Forgot password?</button>}
               {authMode === "forgot" && <button className="text-button auth-toggle" onClick={() => { setAuthMode("login"); setAuthError(""); setAuthNotice(""); }}>Back to sign in</button>}
               {authMode === "reset" && <button className="text-button auth-toggle" onClick={() => { setAuthMode("login"); setAuthError(""); setAuthNotice(""); }}>Back to sign in</button>}
-              {authMode === "login" && (showResendVerification || authError.toLowerCase().includes("verify your email")) && <button className="text-button auth-toggle" onClick={() => { void request<{ message: string }>("/auth/verification", { method: "POST", body: JSON.stringify({ email: verificationEmail }) }).then((result) => { setAuthNotice(result.message); setAuthError(""); }).catch((error: unknown) => setAuthError(error instanceof Error ? error.message : "Could not resend verification email")); }}>Resend verification email</button>}
               {(authMode === "login" || authMode === "register") && <button className="text-button auth-toggle" onClick={() => { setAuthMode(authMode === "login" ? "register" : "login"); setAuthError(""); setAuthNotice(""); }}>
                 {authMode === "login" ? "New here? Create a workspace" : "Already have a workspace? Sign in"}
               </button>

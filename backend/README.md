@@ -220,7 +220,7 @@ Demo login (after seeding): `owner@urbanfit.demo` / `demo12345`
 | GET | `/api/health/ready` | no | checks API and database availability |
 | POST | `/api/auth/register` | no | creates a workspace and sends email verification |
 | POST | `/api/auth/register/start` | no | compatibility registration alias |
-| POST | `/api/auth/verify-email` | no | consumes a one-time email verification link |
+| POST | `/api/auth/forgot-password` | no | sends a password reset link to a registered account |
 | POST | `/api/auth/login` | no | validates password and sets an HTTP-only session cookie |
 | POST | `/api/auth/logout` | no | revokes current session and clears cookie |
 | POST | `/api/auth/forgot-password` | no | requests a one-time password reset link |
