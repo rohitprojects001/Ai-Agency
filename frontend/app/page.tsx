@@ -8,16 +8,16 @@ const CONFIGURED_API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
 const TOKEN_KEY = "rohit-ai-session";
 const LEAD_STAGES = ["NEW", "CONTACTED", "QUALIFIED", "PROPOSAL", "NEGOTIATION", "WON", "LOST"] as const;
 const NAV_ITEMS = [
-  { id: "overview", label: "Overview", index: "01" },
-  { id: "inbox", label: "Conversation desk", index: "02" },
-  { id: "pipeline", label: "Lead pipeline", index: "03" },
-  { id: "contacts", label: "Contacts", index: "04" },
-  { id: "appointments", label: "Appointments", index: "05" },
-  { id: "catalog", label: "Offer library", index: "06" },
-  { id: "agents", label: "AI agents", index: "07" },
-  { id: "automations", label: "Automation engine", index: "08" },
-  { id: "channels", label: "Channels & calls", index: "09" },
-  { id: "settings", label: "Business setup", index: "10" },
+  { id: "overview", label: "Overview", shortLabel: "Home", index: "01" },
+  { id: "inbox", label: "Conversation desk", shortLabel: "Inbox", index: "02" },
+  { id: "pipeline", label: "Lead pipeline", shortLabel: "Pipeline", index: "03" },
+  { id: "contacts", label: "Contacts", shortLabel: "People", index: "04" },
+  { id: "appointments", label: "Appointments", shortLabel: "Bookings", index: "05" },
+  { id: "catalog", label: "Offer library", shortLabel: "Offers", index: "06" },
+  { id: "agents", label: "AI agents", shortLabel: "AI team", index: "07" },
+  { id: "automations", label: "Automation engine", shortLabel: "Flows", index: "08" },
+  { id: "channels", label: "Channels & calls", shortLabel: "Channels", index: "09" },
+  { id: "settings", label: "Business setup", shortLabel: "Setup", index: "10" },
 ] as const;
 
 type ViewId = (typeof NAV_ITEMS)[number]["id"];
@@ -685,7 +685,7 @@ function Home() {
         <div className="workspace-switcher"><div className="workspace-avatar">{initials(session.organization.name)}</div><div className="workspace-name"><strong>{session.organization.name}</strong><span>{session.role.toLowerCase()} workspace</span></div><span className={`status-chip ${session.organization.mode === "LIVE" ? "status-open" : "status-escalated"}`}>{session.organization.mode ?? "TRIAL"}</span></div>
         <div className="side-label">WORKSPACE <span>⌘ K</span></div>
         <nav className="main-nav" aria-label="Workspace sections">
-          {NAV_ITEMS.map((item) => <button key={item.id} className={`nav-item ${view === item.id ? "active" : ""}`} onClick={() => { setView(item.id); setQuery(""); }}><span className="nav-index">{item.index}</span><span>{item.label}</span>{item.id === "inbox" && openConversations.length > 0 && <b className="nav-count">{openConversations.length}</b>}</button>)}
+          {NAV_ITEMS.map((item) => <button key={item.id} className={`nav-item ${view === item.id ? "active" : ""}`} onClick={() => { setView(item.id); setQuery(""); }} aria-label={item.label} aria-current={view === item.id ? "page" : undefined} title={item.label}><span className="nav-index">{item.index}</span><span>{item.label}</span><span className="nav-label-mobile">{item.shortLabel}</span>{item.id === "inbox" && openConversations.length > 0 && <b className="nav-count">{openConversations.length}</b>}</button>)}
         </nav>
         <div className="sidebar-spacer" />
         <div className="connection-card"><div className="connection-heading"><span className={`connection-dot ${snapshot.whatsapp?.connected ? "is-live" : ""}`} /><span>WHATSAPP CHANNEL</span></div><strong>{snapshot.whatsapp?.connected ? "Connected" : "Demo mode"}</strong><p>{snapshot.whatsapp?.connected ? "Live conversations are flowing." : "Try the assistant with a sample message."}</p><button onClick={() => snapshot.whatsapp?.connected ? setView("settings") : setModal("simulate")}>{snapshot.whatsapp?.connected ? "View connection" : "Run a simulation"}<span>↗</span></button></div>
